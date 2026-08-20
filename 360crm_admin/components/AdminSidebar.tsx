@@ -105,16 +105,6 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, 
       ]
     },
     {
-      id: 'employee_workspace',
-      title: 'Employee Workspace',
-      icon: Smartphone,
-      isDropdown: false,
-      permission: 'dashboard.view',
-      items: [
-        { id: 'employee_portal', label: 'Field & Calling Desk', icon: PhoneCall, permission: 'dashboard.view', badge: 'Live' }
-      ]
-    },
-    {
       id: 'sales',
       title: 'Sales',
       icon: TrendingUp,
