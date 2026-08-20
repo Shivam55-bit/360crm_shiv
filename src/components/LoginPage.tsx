@@ -22,14 +22,6 @@ export const LoginPage: React.FC = () => {
 
   const demoAccounts: LoginAccount[] = [
     {
-      role: '👨‍💼 Field Employee (Arjun)',
-      email: 'employee@360crm.com',
-      password: 'admin123',
-      name: 'Arjun Singh (Field & Calling Desk)',
-      badge: 'Dedicated 15-Module Employee Portal',
-      color: 'border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 ring-2 ring-rose-500/30',
-    },
-    {
       role: 'Super Admin',
       email: 'shivamshishodia5541@gmail.com',
       password: 'shivamshishodia5541@gmail.com',
@@ -46,36 +38,12 @@ export const LoginPage: React.FC = () => {
       color: 'border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300',
     },
     {
-      role: 'Sales Rep',
-      email: 'sales@360crm.com',
+      role: 'Employee Portal',
+      email: 'employee@360crm.com',
       password: 'admin123',
-      name: 'Vikram Mehta (Sales Manager)',
-      badge: 'Leads, Calls & Quotations',
-      color: 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300',
-    },
-    {
-      role: 'Store / Inventory',
-      email: 'inventory@360crm.com',
-      password: 'admin123',
-      name: 'Anjali Verma (Warehouse Mgr)',
-      badge: 'Stock In/Out & Suppliers',
-      color: 'border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300',
-    },
-    {
-      role: 'Accounts & Finance',
-      email: 'accounts@360crm.com',
-      password: 'admin123',
-      name: 'Suresh Patel (Senior Accountant)',
-      badge: 'Invoices & Payments',
-      color: 'border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300',
-    },
-    {
-      role: 'HR & People',
-      email: 'hr@360crm.com',
-      password: 'admin123',
-      name: 'Neha Kapoor (HR Director)',
-      badge: 'Attendance & Salaries',
-      color: 'border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300',
+      name: 'Arjun Singh (Field & Calling Desk)',
+      badge: 'Dedicated Employee Workspace',
+      color: 'border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 ring-2 ring-rose-500/30',
     },
   ];
 
@@ -87,12 +55,15 @@ export const LoginPage: React.FC = () => {
         setEnabledLoginEmails(enabledEmails);
         const knownEmails = new Set(demoAccounts.map(account => account.email.toLowerCase()));
         const dynamicAccounts: LoginAccount[] = res.data
-          .filter((account: { email: string }) => !knownEmails.has(account.email.toLowerCase()))
+          .filter((account: { email: string; role: string }) => 
+            !knownEmails.has(account.email.toLowerCase()) && 
+            ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'].includes(account.role?.toUpperCase())
+          )
           .map((account: { name: string; email: string; role: string }) => ({
             role: account.role,
             email: account.email,
             name: account.name,
-            badge: 'Admin Access Portal',
+            badge: 'Portal Access',
             color: 'border-slate-500/50 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300'
           }));
         setDynamicLoginAccounts(dynamicAccounts);
