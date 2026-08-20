@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { db } from '../database/db';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
@@ -48,13 +49,38 @@ export async function getEmployees(req: AuthenticatedRequest, res: Response) {
 
 export async function createEmployee(req: AuthenticatedRequest, res: Response) {
   try {
-    const { name, email, phone, department, designation, salary, joiningDate } = req.body;
+    const { name, email, phone, department, designation, salary, joiningDate, password } = req.body;
     if (!name || !email || !department) {
       return res.status(400).json({ success: false, message: 'Name, email and department are required' });
     }
 
+    const existingUser = db.users.findOne(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+    }
+
     const count = db.employees.countDocuments() + 1;
     const employeeId = `EMP-${String(count).padStart(4, '0')}`;
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password || '12345678', salt);
+
+    let role = 'EMPLOYEE';
+    if (department === 'Sales') role = 'SALES_EMPLOYEE';
+    if (department === 'Store / Warehouse') role = 'STORE_EMPLOYEE';
+    if (department === 'Accounts') role = 'ACCOUNTANT';
+    if (department === 'HR & Admin') role = 'HR_EMPLOYEE';
+
+    const newUser = db.users.insertOne({
+      name,
+      email,
+      phone: phone || '',
+      passwordHash,
+      role,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
 
     const newEmp = db.employees.insertOne({
       employeeId,
@@ -66,12 +92,13 @@ export async function createEmployee(req: AuthenticatedRequest, res: Response) {
       joiningDate: joiningDate || new Date().toISOString().split('T')[0],
       salary: Number(salary) || 35000,
       status: 'ACTIVE',
+      userId: newUser._id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
 
     recordAuditLog(req, 'CREATE', 'employees', 'Employee', newEmp._id, undefined, { name, employeeId, department });
-    return res.status(201).json({ success: true, message: 'Employee onboarded', data: newEmp });
+    return res.status(201).json({ success: true, message: 'Employee onboarded and account created', data: newEmp });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }

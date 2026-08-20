@@ -30,6 +30,7 @@ export const EmployeesView: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     department: 'Sales',
     designation: 'Sales Executive',
@@ -138,6 +139,30 @@ export const EmployeesView: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Password *</label>
+              <input
+                type="password"
+                required
+                placeholder="Required for portal login"
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Designation *</label>
+              <input
+                type="text"
+                required
+                value={formData.designation}
+                onChange={e => setFormData({ ...formData, designation: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
               />
             </div>
