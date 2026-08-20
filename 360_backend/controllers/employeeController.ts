@@ -751,6 +751,37 @@ export async function getEmployeeCustomers(req: AuthenticatedRequest, res: Respo
   }
 }
 
+export async function createEmployeeCustomer(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userName } = getEmpContext(req);
+    const { name, companyName, email, phone, gstNumber, address } = req.body;
+    
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, message: 'Customer name and phone are required' });
+    }
+
+    const newCustomer = db.customers.insertOne({
+      name,
+      companyName: companyName || name,
+      email: email || '',
+      phone,
+      gstNumber: gstNumber || '',
+      address: address || { city: '', state: '', country: 'India' },
+      assignedTo: userName,
+      totalOrdersCount: 0,
+      totalSpent: 0,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    recordAuditLog(req, 'CREATE', 'customers', 'Customer', newCustomer._id, undefined, { name, companyName });
+    return res.status(201).json({ success: true, message: 'Customer created', data: newCustomer });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 // ----------------------------------------------------
 // 8. TASKS
 // ----------------------------------------------------

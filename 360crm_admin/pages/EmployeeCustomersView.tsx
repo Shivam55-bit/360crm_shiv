@@ -33,7 +33,7 @@ export const EmployeeCustomersView: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const res = await api.post('/customers', {
+      const res = await api.post('/employee/customers', {
         name: formData.name,
         companyName: formData.companyName || formData.name,
         email: formData.email,

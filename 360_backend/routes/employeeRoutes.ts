@@ -37,6 +37,7 @@ router.post('/messages', empCtrl.sendEmployeeMessage);
 
 // 7. Customers
 router.get('/customers', empCtrl.getEmployeeCustomers);
+router.post('/customers', empCtrl.createEmployeeCustomer);
 
 // 8. Tasks
 router.get('/tasks', empCtrl.getEmployeeTasks);
