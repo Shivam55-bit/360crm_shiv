@@ -75,6 +75,28 @@ class ApiService {
     return headers;
   }
 
+  private async parseResponse(res: Response): Promise<ApiResponse> {
+    const text = await res.text();
+    if (!text || !text.trim()) {
+      if (!res.ok) {
+        return { success: false, message: `Server status ${res.status} (${res.statusText || 'Error'}). Please retry in a moment.` };
+      }
+      return { success: true };
+    }
+    try {
+      const data = JSON.parse(text);
+      if (!res.ok && data.success === undefined) {
+        data.success = false;
+      }
+      return data;
+    } catch {
+      return {
+        success: false,
+        message: res.ok ? text : `Server returned error (${res.status}). Server might be redeploying, please retry.`
+      };
+    }
+  }
+
   public async get<T = any>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
     try {
       const url = this.normalizeUrl(endpoint, params);
@@ -82,8 +104,7 @@ class ApiService {
         method: 'GET',
         headers: this.getHeaders(),
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err: any) {
       console.error(`API GET ${endpoint} Error:`, err);
       return { success: false, message: err.message || 'Network request failed' };
@@ -98,8 +119,7 @@ class ApiService {
         headers: this.getHeaders(),
         body: payload ? JSON.stringify(payload) : undefined,
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err: any) {
       console.error(`API POST ${endpoint} Error:`, err);
       return { success: false, message: err.message || 'Network request failed' };
@@ -114,8 +134,7 @@ class ApiService {
         headers: this.getHeaders(),
         body: payload ? JSON.stringify(payload) : undefined,
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err: any) {
       console.error(`API PUT ${endpoint} Error:`, err);
       return { success: false, message: err.message || 'Network request failed' };
@@ -130,8 +149,7 @@ class ApiService {
         headers: this.getHeaders(),
         body: payload ? JSON.stringify(payload) : undefined,
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err: any) {
       console.error(`API PATCH ${endpoint} Error:`, err);
       return { success: false, message: err.message || 'Network request failed' };
@@ -145,8 +163,7 @@ class ApiService {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err: any) {
       console.error(`API DELETE ${endpoint} Error:`, err);
       return { success: false, message: err.message || 'Network request failed' };
