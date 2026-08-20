@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
+import { api } from '@/src/services/api';
 import { Lead, Attendance, CallLog, FollowUp } from '@/src/types';
 import {
   Phone,
@@ -127,42 +128,20 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
   const fetchData = async () => {
     try {
       setLoading(true);
-      const headers = { Authorization: `Bearer ${token || localStorage.getItem('token')}` };
 
-      // Fetch Leads
-      const leadsRes = await fetch('/api/leads', { headers });
-      const leadsJson = await leadsRes.json();
-      if (leadsJson.success) {
-        setLeads(leadsJson.data || []);
-      }
+      const [leadsRes, callsRes, fupRes, attRes, todayRes] = await Promise.all([
+        api.get('/leads'),
+        api.get('/call-logs'),
+        api.get('/follow-ups'),
+        api.get('/attendance'),
+        api.get('/attendance/today-status')
+      ]);
 
-      // Fetch Call Logs
-      const callsRes = await fetch('/api/call-logs', { headers });
-      const callsJson = await callsRes.json();
-      if (callsJson.success) {
-        setCallLogs(callsJson.data || []);
-      }
-
-      // Fetch Follow-ups
-      const fupRes = await fetch('/api/follow-ups', { headers });
-      const fupJson = await fupRes.json();
-      if (fupJson.success) {
-        setFollowUps(fupJson.data || []);
-      }
-
-      // Fetch Attendance History
-      const attRes = await fetch('/api/attendance', { headers });
-      const attJson = await attRes.json();
-      if (attJson.success) {
-        setAttendanceRecords(attJson.data || []);
-      }
-
-      // Fetch Today's Attendance Status
-      const todayRes = await fetch('/api/attendance/today-status', { headers });
-      const todayJson = await todayRes.json();
-      if (todayJson.success) {
-        setTodayAttendance(todayJson.data);
-      }
+      if (leadsRes.success) setLeads(leadsRes.data || []);
+      if (callsRes.success) setCallLogs(callsRes.data || []);
+      if (fupRes.success) setFollowUps(fupRes.data || []);
+      if (attRes.success) setAttendanceRecords(attRes.data || []);
+      if (todayRes.success && todayRes.data) setTodayAttendance(todayRes.data);
     } catch (err) {
       console.error('Error fetching employee data:', err);
     } finally {
@@ -1075,7 +1054,7 @@ interface SelfieClockModalProps {
 }
 
 const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSuccess }) => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -1090,78 +1069,64 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
   const [submitting, setSubmitting] = useState(false);
 
   // Start / Switch Camera Stream
-  useEffect(() => {
-    let activeStream: MediaStream | null = null;
-    let isCancelled = false;
+  const initCamera = async () => {
+    setCameraStarting(true);
+    setCameraError(null);
 
-    async function initCamera() {
-      setCameraStarting(true);
-      setCameraError(null);
-
-      // Stop existing stream tracks
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        setStream(null);
-      }
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraStarting(false);
-        setCameraError('Camera API not supported in this browser. Please take or upload a photo below.');
-        return;
-      }
-
-      try {
-        let mediaStream: MediaStream;
-        try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: { ideal: facingMode },
-              width: { ideal: 640 },
-              height: { ideal: 480 }
-            },
-            audio: false
-          });
-        } catch {
-          // Fallback to basic video without constraints
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
-        }
-
-        if (isCancelled) {
-          mediaStream.getTracks().forEach(t => t.stop());
-          return;
-        }
-
-        activeStream = mediaStream;
-        setStream(mediaStream);
-        setCameraStarting(false);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.play().catch(() => {});
-        }
-      } catch (err: any) {
-        if (!isCancelled) {
-          console.warn('Camera access error:', err);
-          setCameraStarting(false);
-          setCameraError('Camera permission not granted or webcam busy. You can snap or upload a photo below.');
-        }
-      }
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      setStream(null);
     }
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraStarting(false);
+      setCameraError('Camera is not supported on this browser.');
+      return;
+    }
+
+    try {
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+      } catch {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
+
+      setStream(mediaStream);
+      setCameraStarting(false);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(() => {});
+      }
+    } catch (err: any) {
+      console.warn('Camera access error:', err);
+      setCameraStarting(false);
+      setCameraError('Please allow camera permission in your browser to take a selfie.');
+    }
+  };
+
+  useEffect(() => {
     initCamera();
 
     return () => {
-      isCancelled = true;
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop());
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     };
   }, [facingMode]);
 
-  // Ensure video element plays stream on mount or update
+  // Ensure video element plays stream
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -1214,12 +1179,11 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (facingMode === 'user') {
-          // Mirror image for front camera selfie
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
         }
         ctx.drawImage(video, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         setCapturedPhoto(dataUrl);
       }
     }
@@ -1230,52 +1194,31 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
     setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
   };
 
-  // Handle File Upload Fallback
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        setCapturedPhoto(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // Submit Clock In / Out
   const handleSubmit = async () => {
     if (!capturedPhoto) {
-      alert('Please snap or upload your selfie verification photo first.');
+      alert('Please snap your selfie verification photo first.');
       return;
     }
 
     try {
       setSubmitting(true);
-      const endpoint = mode === 'IN' ? '/api/attendance/clock-in' : '/api/attendance/clock-out';
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token || localStorage.getItem('token')}`
-      };
+      const endpoint = mode === 'IN' ? '/attendance/clock-in' : '/attendance/clock-out';
 
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          employeeName: user?.name,
-          selfie: capturedPhoto,
-          location: gpsLocation,
-          remarks
-        })
+      const res = await api.post(endpoint, {
+        employeeName: user?.name,
+        selfie: capturedPhoto,
+        location: gpsLocation,
+        remarks
       });
 
-      const json = await res.json();
-      if (json.success) {
-        onSuccess(json.message || `Successfully Clocked ${mode === 'IN' ? 'In' : 'Out'}!`, json.data);
+      if (res.success) {
+        onSuccess(res.message || `Successfully Clocked ${mode === 'IN' ? 'In' : 'Out'}!`, res.data);
       } else {
-        alert(json.message || 'Clock action failed');
+        alert(res.message || 'Clock action failed');
       }
     } catch (err: any) {
-      alert('Error submitting attendance: ' + err.message);
+      alert('Error submitting attendance: ' + (err.message || 'Network error'));
     } finally {
       setSubmitting(false);
     }
@@ -1298,14 +1241,17 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           </button>
         </div>
 
-        {/* Video / Photo Viewport */}
+        {/* Live Camera / Captured Photo Viewport */}
         <div className="relative w-full h-64 sm:h-72 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
           {capturedPhoto ? (
             <div className="relative w-full h-full">
               <img src={capturedPhoto} alt="Captured Selfie" className="w-full h-full object-cover" />
               <button
                 type="button"
-                onClick={() => setCapturedPhoto(null)}
+                onClick={() => {
+                  setCapturedPhoto(null);
+                  initCamera();
+                }}
                 className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer shadow-md"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -1314,7 +1260,6 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
             </div>
           ) : (
             <>
-              {/* Always keep video mounted so stream can attach immediately */}
               <video
                 ref={el => {
                   videoRef.current = el;
@@ -1342,7 +1287,6 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
                 </button>
               )}
 
-              {/* Fallback & Phone Camera Launcher if stream is not ready */}
               {!stream && (
                 <div className="p-6 text-center space-y-3 w-full">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto text-blue-400">
@@ -1352,20 +1296,15 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
                     <p className="text-xs font-semibold text-slate-300">
                       {cameraStarting ? 'Connecting to camera...' : cameraError || 'Camera unavailable'}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">Tap below to snap selfie with your phone camera:</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                    <label className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md flex items-center justify-center gap-2">
-                      <Camera className="w-4 h-4" />
-                      <span>Take Camera Photo</span>
-                      <input type="file" accept="image/*" capture="user" onChange={handleFileUpload} className="hidden" />
-                    </label>
-                    <label className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer border border-slate-700 flex items-center justify-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      <span>Upload Photo</span>
-                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                    </label>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={initCamera}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md inline-flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry Camera</span>
+                  </button>
                 </div>
               )}
             </>
@@ -1373,23 +1312,16 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        {/* Action button if Live Camera is active */}
+        {/* Capture Selfie Photo Button (ONLY THIS BUTTON) */}
         {!capturedPhoto && stream && (
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={takeSelfie}
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Capture Selfie Photo</span>
-            </button>
-            <label className="w-full sm:w-auto px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer border border-slate-700 flex items-center justify-center gap-1.5">
-              <Upload className="w-3.5 h-3.5" />
-              <span>Upload / Phone Cam</span>
-              <input type="file" accept="image/*" capture="user" onChange={handleFileUpload} className="hidden" />
-            </label>
-          </div>
+          <button
+            type="button"
+            onClick={takeSelfie}
+            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Capture Selfie Photo</span>
+          </button>
         )}
 
         {/* GPS Verification Badge */}
@@ -1429,7 +1361,7 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           type="button"
           disabled={submitting || !capturedPhoto}
           onClick={handleSubmit}
-          className={`w-full py-3 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
             capturedPhoto
               ? mode === 'IN'
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
@@ -1552,35 +1484,25 @@ const CallAndRecordingStudioModal: React.FC<CallAndRecordingStudioModalProps> = 
   const handleSaveCall = async () => {
     try {
       setSaving(true);
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token || localStorage.getItem('token')}`
-      };
-
-      const res = await fetch(`/api/leads/${lead._id}/calls`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          durationSeconds: callDurationSeconds,
-          outcome,
-          notes: notes || `Outbound client call. Outcome: ${outcome}`,
-          recordingUrl: audioBase64 || '',
-          recordingName: audioBase64 ? `call_rec_${lead.name.replace(/\s+/g, '_')}_${Date.now()}.wav` : '',
-          followUpDate: scheduleFollowUpDate,
-          followUpNotes,
-          direction: 'OUTBOUND',
-          updateLeadStatus
-        })
+      const res = await api.post(`/leads/${lead._id}/calls`, {
+        durationSeconds: callDurationSeconds,
+        outcome,
+        notes: notes || `Outbound client call. Outcome: ${outcome}`,
+        recordingUrl: audioBase64 || '',
+        recordingName: audioBase64 ? `call_rec_${lead.name.replace(/\s+/g, '_')}_${Date.now()}.wav` : '',
+        followUpDate: scheduleFollowUpDate,
+        followUpNotes,
+        direction: 'OUTBOUND',
+        updateLeadStatus
       });
 
-      const json = await res.json();
-      if (json.success) {
-        onSuccess(json.message || 'Call & audio recording saved successfully!');
+      if (res.success) {
+        onSuccess(res.message || 'Call & audio recording saved successfully!');
       } else {
-        alert(json.message || 'Failed to save call');
+        alert(res.message || 'Failed to save call');
       }
     } catch (err: any) {
-      alert('Error saving call: ' + err.message);
+      alert('Error saving call: ' + (err.message || 'Network error'));
     } finally {
       setSaving(false);
     }
