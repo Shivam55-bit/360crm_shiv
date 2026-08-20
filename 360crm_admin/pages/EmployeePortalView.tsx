@@ -1080,38 +1080,97 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraStarting, setCameraStarting] = useState(true);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [fetchingGps, setFetchingGps] = useState(true);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Start Camera Stream
+  // Start / Switch Camera Stream
   useEffect(() => {
     let activeStream: MediaStream | null = null;
+    let isCancelled = false;
 
-    async function startCamera() {
+    async function initCamera() {
+      setCameraStarting(true);
+      setCameraError(null);
+
+      // Stop existing stream tracks
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        setStream(null);
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraStarting(false);
+        setCameraError('Camera API not supported in this browser. Please take or upload a photo below.');
+        return;
+      }
+
       try {
-        setCameraError(null);
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: false
-        });
+        let mediaStream: MediaStream;
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: facingMode },
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            },
+            audio: false
+          });
+        } catch {
+          // Fallback to basic video without constraints
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
+
+        if (isCancelled) {
+          mediaStream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
         activeStream = mediaStream;
         setStream(mediaStream);
+        setCameraStarting(false);
+
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(() => {});
         }
       } catch (err: any) {
-        console.warn('Camera access error:', err);
-        setCameraError('Camera access not granted or unavailable. You can also upload a photo.');
+        if (!isCancelled) {
+          console.warn('Camera access error:', err);
+          setCameraStarting(false);
+          setCameraError('Camera permission not granted or webcam busy. You can snap or upload a photo below.');
+        }
       }
     }
 
-    startCamera();
+    initCamera();
 
-    // Fetch GPS Geolocation
+    return () => {
+      isCancelled = true;
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [facingMode]);
+
+  // Ensure video element plays stream on mount or update
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(err => console.log('Video play error:', err));
+    }
+  }, [stream]);
+
+  // Fetch GPS Geolocation
+  useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         pos => {
@@ -1141,12 +1200,6 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
       });
       setFetchingGps(false);
     }
-
-    return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop());
-      }
-    };
   }, []);
 
   // Take Snapshot from Video
@@ -1154,15 +1207,27 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        if (facingMode === 'user') {
+          // Mirror image for front camera selfie
+          ctx.translate(width, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(video, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
         setCapturedPhoto(dataUrl);
       }
     }
+  };
+
+  // Toggle Front / Back Camera
+  const toggleFacingMode = () => {
+    setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
   };
 
   // Handle File Upload Fallback
@@ -1217,8 +1282,9 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 text-white shadow-2xl space-y-4 my-auto animate-in fade-in zoom-in-95 duration-200">
+        {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
             <h3 className="text-base font-black text-white flex items-center gap-2">
@@ -1227,51 +1293,102 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
             </h3>
             <p className="text-xs text-slate-400">Capture your face & stamp GPS location for verification.</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Video / Photo Viewport */}
-        <div className="relative w-full h-64 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+        <div className="relative w-full h-64 sm:h-72 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
           {capturedPhoto ? (
             <div className="relative w-full h-full">
               <img src={capturedPhoto} alt="Captured Selfie" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => setCapturedPhoto(null)}
-                className="absolute top-3 right-3 px-3 py-1 bg-black/60 hover:bg-black text-white text-xs font-bold rounded-lg border border-white/20 backdrop-blur-xs"
+                className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer shadow-md"
               >
-                Retake 🔄
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retake Photo</span>
               </button>
             </div>
-          ) : stream ? (
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
           ) : (
-            <div className="p-6 text-center space-y-3">
-              <Camera className="w-8 h-8 text-slate-500 mx-auto" />
-              <p className="text-xs text-slate-400">{cameraError || 'Initializing camera stream...'}</p>
-              <label className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">
-                <Upload className="w-3.5 h-3.5 inline mr-1.5" />
-                Upload Selfie Photo
-                <input type="file" accept="image/*" capture="user" onChange={handleFileUpload} className="hidden" />
-              </label>
-            </div>
+            <>
+              {/* Always keep video mounted so stream can attach immediately */}
+              <video
+                ref={el => {
+                  videoRef.current = el;
+                  if (el && stream && el.srcObject !== stream) {
+                    el.srcObject = stream;
+                    el.play().catch(() => {});
+                  }
+                }}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''} ${!stream ? 'hidden' : 'block'}`}
+              />
+
+              {/* Camera Switch button if stream is live */}
+              {stream && (
+                <button
+                  type="button"
+                  onClick={toggleFacingMode}
+                  className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/60 hover:bg-black text-white text-xs font-semibold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer z-10"
+                  title="Switch Front/Back Camera"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">{facingMode === 'user' ? 'Front' : 'Back'} Cam</span>
+                </button>
+              )}
+
+              {/* Fallback & Phone Camera Launcher if stream is not ready */}
+              {!stream && (
+                <div className="p-6 text-center space-y-3 w-full">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto text-blue-400">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-300">
+                      {cameraStarting ? 'Connecting to camera...' : cameraError || 'Camera unavailable'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">Tap below to snap selfie with your phone camera:</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                    <label className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md flex items-center justify-center gap-2">
+                      <Camera className="w-4 h-4" />
+                      <span>Take Camera Photo</span>
+                      <input type="file" accept="image/*" capture="user" onChange={handleFileUpload} className="hidden" />
+                    </label>
+                    <label className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer border border-slate-700 flex items-center justify-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Photo</span>
+                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        {/* Snap Button if Video Active */}
+        {/* Action button if Live Camera is active */}
         {!capturedPhoto && stream && (
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
               type="button"
               onClick={takeSelfie}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Camera className="w-4 h-4" />
               <span>Capture Selfie Photo</span>
             </button>
+            <label className="w-full sm:w-auto px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer border border-slate-700 flex items-center justify-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Upload / Phone Cam</span>
+              <input type="file" accept="image/*" capture="user" onChange={handleFileUpload} className="hidden" />
+            </label>
           </div>
         )}
 
@@ -1303,7 +1420,7 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
             value={remarks}
             onChange={e => setRemarks(e.target.value)}
             placeholder="e.g. Visiting client factory in GIDC Naroda"
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -1312,12 +1429,12 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           type="button"
           disabled={submitting || !capturedPhoto}
           onClick={handleSubmit}
-          className={`w-full py-3 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${
+          className={`w-full py-3 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
             capturedPhoto
               ? mode === 'IN'
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
                 : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30'
-              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
           }`}
         >
           <CheckCircle2 className="w-4 h-4" />

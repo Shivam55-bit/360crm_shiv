@@ -46,6 +46,8 @@ import {
 interface SidebarProps {
   currentView: string;
   onNavigate: (viewId: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface NavSubItem {
@@ -65,8 +67,13 @@ interface NavGroup {
   items?: NavSubItem[];
 }
 
-export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
+export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isOpen, onClose }) => {
   const { hasPermission, user, setActivePortal } = useAuth();
+
+  const handleNavClick = (viewId: string) => {
+    onNavigate(viewId);
+    if (onClose) onClose();
+  };
 
   const isEmployee = user?.role === 'EMPLOYEE';
   const isHrUser = user?.role === 'HR_EMPLOYEE';
@@ -243,23 +250,48 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }
   };
 
   return (
-    <aside className="w-64 bg-[#090f1d] text-slate-400 flex flex-col shrink-0 min-h-screen border-r border-slate-800/80 select-none">
-      {/* Brand Header */}
-      <div className="p-4 flex items-center justify-between border-b border-slate-800/80 bg-[#070b16]">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl ${isEmployee ? 'bg-gradient-to-tr from-emerald-600 to-teal-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-500'} text-white font-black flex items-center justify-center text-sm shadow-md tracking-wider`}>
-            {isEmployee ? 'EP' : 'SS'}
+    <>
+      {/* Mobile Dark Backdrop Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Container - Off-canvas drawer on mobile, static on lg */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#090f1d] text-slate-400 flex flex-col shrink-0 min-h-screen border-r border-slate-800/80 select-none transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
+      >
+        {/* Brand Header */}
+        <div className="p-4 flex items-center justify-between border-b border-slate-800/80 bg-[#070b16]">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl ${isEmployee ? 'bg-gradient-to-tr from-emerald-600 to-teal-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-500'} text-white font-black flex items-center justify-center text-sm shadow-md tracking-wider`}>
+              {isEmployee ? 'EP' : 'SS'}
+            </div>
+            <div>
+              <h1 className="text-sm font-bold text-white tracking-wide uppercase leading-tight">
+                {isEmployee ? 'EMPLOYEE PORTAL' : 'SHIV SHAKTI'}
+              </h1>
+              <p className="text-[10px] text-blue-400 font-semibold tracking-wider uppercase">
+                {isEmployee ? 'Field & Calling Desk' : isHrUser ? 'HR Management' : 'Enterprise ERP'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-white tracking-wide uppercase leading-tight">
-              {isEmployee ? 'EMPLOYEE PORTAL' : 'SHIV SHAKTI'}
-            </h1>
-            <p className="text-[10px] text-blue-400 font-semibold tracking-wider uppercase">
-              {isEmployee ? 'Field & Calling Desk' : isHrUser ? 'HR Management' : 'Enterprise ERP'}
-            </p>
-          </div>
+
+          {/* Close button on mobile */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 lg:hidden focus:outline-hidden"
+            aria-label="Close menu"
+          >
+            <span className="text-lg leading-none">&times;</span>
+          </button>
         </div>
-      </div>
 
       {/* Navigation Menu */}
       <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1.5 custom-scrollbar">
@@ -277,7 +309,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }
               return (
                 <button
                   key={item.id}
-                  onClick={() => onNavigate(item.id)}
+                  onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                     isActive
                       ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-600/30'
@@ -330,8 +362,9 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }
                         onClick={() => {
                           if (item.id === 'users_roles' && user?.role === 'SUPER_ADMIN') {
                             setActivePortal('superadmin');
+                            if (onClose) onClose();
                           } else {
-                            onNavigate(item.id);
+                            handleNavClick(item.id);
                           }
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
@@ -394,7 +427,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }
                       return (
                         <button
                           key={item.id}
-                          onClick={() => onNavigate(item.id)}
+                          onClick={() => handleNavClick(item.id)}
                           className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all ${
                             isActive
                               ? 'bg-blue-600 text-white font-semibold shadow-xs shadow-blue-500/20'
@@ -444,7 +477,8 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }
           )}
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

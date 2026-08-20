@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
-import { Shield, LogOut, ChevronDown, Check, UserCheck, RefreshCw } from 'lucide-react';
+import { Shield, LogOut, ChevronDown, Check, UserCheck, RefreshCw, Menu } from 'lucide-react';
 
-export const AdminHeader: React.FC<{ onExportReport?: () => void }> = ({ onExportReport }) => {
+export const AdminHeader: React.FC<{ onExportReport?: () => void; onToggleSidebar?: () => void }> = ({ onExportReport, onToggleSidebar }) => {
   const { user, logout, activePortal, setActivePortal } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
-      <div>
-        <h2 className="text-base font-bold text-slate-900 leading-tight">Business Management</h2>
-        <p className="text-xs text-slate-500 font-normal">Sales, marketing, inventory and accounts in one place.</p>
+    <header className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+      <div className="flex items-center gap-3">
+        {/* Mobile Hamburger Toggle Button */}
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl lg:hidden focus:outline-hidden cursor-pointer"
+          aria-label="Toggle Navigation Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div>
+          <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">Business Management</h2>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-normal hidden sm:block">Sales, marketing, inventory and accounts in one place.</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

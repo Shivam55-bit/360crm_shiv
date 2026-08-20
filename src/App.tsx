@@ -57,6 +57,7 @@ import { SuperAdminPortal } from './../360crm_superadmin/SuperAdminPortal';
 export const AppContent: React.FC = () => {
   const { user, isAuthenticated, isLoading, activePortal, setActivePortal } = useAuth();
   const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // If user role is EMPLOYEE, default view is employee portal
   useEffect(() => {
@@ -217,11 +218,19 @@ export const AppContent: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-800">
       {/* Sidebar Navigation */}
-      <AdminSidebar currentView={currentView} onNavigate={setCurrentView} />
+      <AdminSidebar
+        currentView={currentView}
+        onNavigate={setCurrentView}
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AdminHeader onExportReport={() => {}} />
+        <AdminHeader
+          onExportReport={() => {}}
+          onToggleSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+        />
 
         <main className="flex-1 overflow-y-auto bg-[#f8fafc]">
           {renderCurrentView()}
