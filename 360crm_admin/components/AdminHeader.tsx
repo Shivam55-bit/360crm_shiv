@@ -3,18 +3,8 @@ import { useAuth } from '@/src/context/AuthContext';
 import { Shield, LogOut, ChevronDown, Check, UserCheck, RefreshCw } from 'lucide-react';
 
 export const AdminHeader: React.FC<{ onExportReport?: () => void }> = ({ onExportReport }) => {
-  const { user, logout, switchUser, activePortal, setActivePortal } = useAuth();
+  const { user, logout, activePortal, setActivePortal } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const demoAccounts = [
-    { name: 'Arjun Singh (Field Employee)', email: 'employee@360crm.com', role: 'EMPLOYEE' },
-    { name: 'Priyanshu (Super Admin)', email: 'shivamshishodia5541@gmail.com', role: 'SUPER_ADMIN' },
-    { name: 'Rohan Sharma (Full Admin)', email: 'admin@360crm.com', role: 'ADMIN' },
-    { name: 'Vikram Mehta (Sales Only)', email: 'sales@360crm.com', role: 'SALES_EMPLOYEE' },
-    { name: 'Anjali Verma (Store Only)', email: 'inventory@360crm.com', role: 'STORE_EMPLOYEE' },
-    { name: 'Suresh Patel (Accounts Only)', email: 'accounts@360crm.com', role: 'ACCOUNTANT' },
-    { name: 'Neha Kapoor (HR Only)', email: 'hr@360crm.com', role: 'HR_EMPLOYEE' },
-  ];
 
   return (
     <header className="bg-white border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
@@ -79,34 +69,6 @@ export const AdminHeader: React.FC<{ onExportReport?: () => void }> = ({ onExpor
                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                 <div className="mt-1.5 inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-md border border-blue-200">
                   Role: {user?.role}
-                </div>
-              </div>
-
-              <div className="px-3 py-2">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">
-                  Test Multi-Admin RBAC (Switch Role):
-                </div>
-                <div className="space-y-1">
-                  {demoAccounts.map(account => (
-                    <button
-                      key={account.email}
-                      onClick={() => {
-                        switchUser(account.email);
-                        setDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between transition-colors ${
-                        user?.email === account.email
-                          ? 'bg-blue-50 text-blue-700 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="truncate">
-                        <div>{account.name}</div>
-                        <div className="text-[10px] text-slate-400 font-normal">{account.role}</div>
-                      </div>
-                      {user?.email === account.email && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                    </button>
-                  ))}
                 </div>
               </div>
 

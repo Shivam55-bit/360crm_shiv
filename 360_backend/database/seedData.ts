@@ -12,7 +12,6 @@ import { ALL_PERMISSIONS } from './permissionsList';
 export async function getSeedData() {
   const passwordHash = await bcrypt.hash('admin123', 10);
   const superAdminHash = await bcrypt.hash('shivamshishodia5541@gmail.com', 10);
-  const employeeHash = await bcrypt.hash('employee123', 10);
 
   const allPermCodes = ALL_PERMISSIONS.map(p => p.code);
 
@@ -284,7 +283,7 @@ export async function getSeedData() {
       _id: 'usr_employee_arjun',
       name: 'Arjun Singh',
       email: 'employee@360crm.com',
-      passwordHash: employeeHash,
+      passwordHash: passwordHash,
       phone: '+91 98765 00112',
       role: 'EMPLOYEE',
       roleId: 'role_employee',
