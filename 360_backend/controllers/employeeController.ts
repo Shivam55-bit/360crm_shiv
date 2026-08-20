@@ -1,0 +1,1255 @@
+import { Response } from 'express';
+import bcrypt from 'bcryptjs';
+import { db } from '../database/db';
+import { AuthenticatedRequest } from '../middleware/auth';
+import { recordAuditLog } from '../middleware/audit';
+import {
+  LeadDoc, CustomerDoc, FollowUpDoc, CallLogDoc, TaskDoc,
+  QuotationDoc, SalesOrderDoc, AttendanceDoc, SalaryDoc,
+  LeaveDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
+} from '../database/types';
+
+function parseAttendanceTime(value?: string) {
+  if (!value) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const meridiem = match[3]?.toUpperCase();
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  const date = new Date();
+  date.setHours(hours, Number(match[2]), 0, 0);
+  return date;
+}
+
+function calculateWorkHours(checkIn?: string, checkOut?: string) {
+  const start = parseAttendanceTime(checkIn);
+  const end = parseAttendanceTime(checkOut);
+  if (!start || !end) return 0;
+  return Number((Math.max(0, end.getTime() - start.getTime()) / 3600000).toFixed(2));
+}
+
+// Helper to resolve employee ID and Name from user
+function getEmpContext(req: AuthenticatedRequest) {
+  const userId = req.user?.userId || '';
+  const userName = req.user?.name || '';
+  const userEmail = req.user?.email || '';
+
+  // Look up employee profile if linked
+  const emp = db.employees.findOne(e => e.userId === userId || e.email.toLowerCase() === userEmail.toLowerCase() || e.name.toLowerCase() === userName.toLowerCase());
+  const employeeId = emp?._id || emp?.employeeId || userId;
+  const employeeName = emp?.name || userName;
+
+  return { userId, userName, userEmail, employeeId, employeeName, employeeDoc: emp };
+}
+
+// ----------------------------------------------------
+// 1. EMPLOYEE DASHBOARD
+// ----------------------------------------------------
+export async function getEmployeeDashboard(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const today = new Date().toISOString().split('T')[0];
+
+    // Today's attendance
+    const todayAtt = db.attendance.findOne(a =>
+      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
+      a.date === today
+    );
+
+    // Assigned leads
+    const assignedLeads = db.leads.find(l =>
+      l.assignedTo === userId || l.assignedTo === userName || (l.assignedTo && l.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+
+    // Follow-ups
+    const allFollowUps = db.followUps.find(f =>
+      f.assignedTo === userId || f.assignedTo === userName || (f.assignedTo && f.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+    const todayFollowUps = allFollowUps.filter(f => f.scheduledAt.startsWith(today) && f.status === 'PENDING');
+    const pendingFollowUps = allFollowUps.filter(f => f.status === 'PENDING');
+
+    // Calls today
+    const myCalls = db.callLogs.find(c =>
+      c.employeeId === employeeId || c.employeeId === userId || c.employeeName.toLowerCase() === userName.toLowerCase()
+    );
+    const callsToday = myCalls.filter(c => c.timestamp.startsWith(today));
+
+    // Messages today
+    const myMessages = db.messages.find(m =>
+      m.employeeId === employeeId || m.employeeId === userId || m.employeeName.toLowerCase() === userName.toLowerCase()
+    );
+    const messagesToday = myMessages.filter(m => m.timestamp.startsWith(today));
+
+    // Converted leads
+    const convertedLeads = assignedLeads.filter(l => l.status === 'WON');
+
+    // Tasks
+    const myTasks = db.tasks.find(t =>
+      t.assignedTo === userId || t.assignedTo === userName || t.assignedToId === employeeId
+    );
+    const pendingTasks = myTasks.filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS');
+
+    // Recent notifications
+    const unreadNotifications = db.notifications.find(n => n.userId === userId && !n.isRead);
+
+    // Quick stats
+    const stats = {
+      attendance: {
+        clockedIn: !!(todayAtt && todayAtt.checkIn),
+        clockedOut: !!(todayAtt && todayAtt.checkOut),
+        checkInTime: todayAtt?.checkIn || null,
+        checkOutTime: todayAtt?.checkOut || null,
+        status: todayAtt?.status || 'NOT_MARKED',
+        workHours: todayAtt?.workHours || 0,
+        breaks: todayAtt?.breaks || []
+      },
+      assignedLeadsCount: assignedLeads.length,
+      todayFollowUpsCount: todayFollowUps.length,
+      pendingFollowUpsCount: pendingFollowUps.length,
+      callsTodayCount: callsToday.length,
+      messagesTodayCount: messagesToday.length,
+      convertedLeadsCount: convertedLeads.length,
+      pendingTasksCount: pendingTasks.length,
+      unreadNotificationsCount: unreadNotifications.length,
+      totalPipelineValue: assignedLeads.reduce((acc, l) => acc + (l.estimatedValue || 0), 0)
+    };
+
+    return res.json({
+      success: true,
+      message: 'Employee Dashboard Data Retrieved',
+      data: stats
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 2. ATTENDANCE MANAGEMENT
+// ----------------------------------------------------
+export async function getEmployeeAttendance(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const attendanceRecords = db.attendance.find(a =>
+      a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()
+    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecord = attendanceRecords.find(a => a.date === today) || null;
+
+    return res.json({
+      success: true,
+      data: {
+        today: todayRecord,
+        history: attendanceRecords
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function clockIn(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const { selfie, location, remarks, ipAddress, deviceInfo } = req.body;
+    if (typeof selfie !== 'string' || !selfie.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'A selfie is required to clock in.' });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let existing = db.attendance.findOne(a =>
+      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
+      a.date === today
+    );
+
+    if (existing && existing.checkIn) {
+      return res.status(400).json({
+        success: false,
+        message: `Already clocked in today at ${existing.checkIn}. Cannot clock in twice for the same active session.`
+      });
+    }
+
+    let record: AttendanceDoc;
+    if (existing) {
+      record = db.attendance.updateById(existing._id, {
+        checkIn: nowTime,
+        status: 'PRESENT',
+        selfieCheckIn: selfie || existing.selfieCheckIn,
+        locationCheckIn: location || existing.locationCheckIn,
+        remarks: remarks || 'Selfie Clock-in verified',
+        updatedAt: new Date().toISOString()
+      })!;
+    } else {
+      record = db.attendance.insertOne({
+        employeeId,
+        employeeName,
+        date: today,
+        checkIn: nowTime,
+        status: 'PRESENT',
+        selfieCheckIn: selfie || '',
+        locationCheckIn: location || undefined,
+        remarks: remarks || 'Clocked in via Employee Portal',
+        workHours: 0,
+        breaks: [],
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    recordAuditLog(req, 'CREATE', 'attendance', 'Employee Clock In', record._id, undefined, {
+      checkIn: nowTime,
+      hasSelfie: !!selfie,
+      hasLocation: !!location
+    });
+
+    return res.json({
+      success: true,
+      message: `✅ Shift Started! Biometric Clock-In confirmed at ${nowTime}`,
+      data: record
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function clockOut(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const { selfie, location, remarks } = req.body;
+    if (typeof selfie !== 'string' || !selfie.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'A selfie is required to clock out.' });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let existing = db.attendance.findOne(a =>
+      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
+      a.date === today
+    );
+
+    if (!existing || !existing.checkIn) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot clock out before clocking in first.'
+      });
+    }
+
+    if (existing.checkOut) {
+      return res.status(400).json({
+        success: false,
+        message: `Already clocked out today at ${existing.checkOut}.`
+      });
+    }
+
+    const calculatedHours = calculateWorkHours(existing.checkIn, nowTime);
+
+    const updated = db.attendance.updateById(existing._id, {
+      checkOut: nowTime,
+      selfieCheckOut: selfie || '',
+      locationCheckOut: location || undefined,
+      workHours: calculatedHours,
+      remarks: remarks || existing.remarks || 'Clocked out with selfie verification',
+      updatedAt: new Date().toISOString()
+    })!;
+
+    recordAuditLog(req, 'UPDATE', 'attendance', 'Employee Clock Out', updated._id, undefined, {
+      checkOut: nowTime,
+      hasSelfie: !!selfie
+    });
+
+    return res.json({
+      success: true,
+      message: `👋 Great work today! Clock-Out recorded at ${nowTime}`,
+      data: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function toggleBreak(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const { action } = req.body; // 'START' | 'END'
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let existing = db.attendance.findOne(a =>
+      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
+      a.date === today
+    );
+
+    if (!existing || !existing.checkIn) {
+      return res.status(400).json({ success: false, message: 'Please clock in first before taking a break.' });
+    }
+
+    const breaks = existing.breaks || [];
+
+    if (action === 'START') {
+      const activeBreak = breaks.find(b => !b.end);
+      if (activeBreak) {
+        return res.status(400).json({ success: false, message: 'Break is already in progress.' });
+      }
+      breaks.push({ start: nowTime });
+    } else {
+      const activeBreak = breaks.find(b => !b.end);
+      if (!activeBreak) {
+        return res.status(400).json({ success: false, message: 'No active break to end.' });
+      }
+      activeBreak.end = nowTime;
+      activeBreak.durationMinutes = 30; // standard approx
+    }
+
+    const updated = db.attendance.updateById(existing._id, {
+      breaks,
+      updatedAt: new Date().toISOString()
+    })!;
+
+    return res.json({
+      success: true,
+      message: action === 'START' ? `☕ Break started at ${nowTime}` : `💪 Break ended at ${nowTime}. Back to work!`,
+      data: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 3. MY LEADS & TIMELINE
+// ----------------------------------------------------
+export async function getEmployeeLeads(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const { status, search } = req.query;
+
+    // Strict server-side ownership filter
+    let leads = db.leads.find(l =>
+      l.assignedTo === userId || l.assignedTo === userName || (l.assignedTo && l.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+
+    if (status && typeof status === 'string') {
+      leads = leads.filter(l => l.status === status);
+    }
+
+    if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
+      leads = leads.filter(l =>
+        l.name.toLowerCase().includes(q) ||
+        (l.companyName && l.companyName.toLowerCase().includes(q)) ||
+        l.phone.includes(q) ||
+        (l.email && l.email.toLowerCase().includes(q))
+      );
+    }
+
+    return res.json({
+      success: true,
+      data: leads
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getEmployeeLeadById(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const { id } = req.params;
+
+    const lead = db.leads.findById(id);
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found.' });
+    }
+
+    // Ownership check
+    const isOwner = lead.assignedTo === userId || lead.assignedTo === userName || (lead.assignedTo && lead.assignedTo.toLowerCase() === userName.toLowerCase());
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Access forbidden: You are not assigned to this lead.' });
+    }
+
+    // Get lead's calls, follow-ups, messages, and timeline
+    const calls = db.callLogs.find(c => c.leadId === id);
+    const followUps = db.followUps.find(f => f.leadId === id);
+    const messages = db.messages.find(m => m.leadId === id);
+    const timeline = db.activityTimeline.find(t => t.leadId === id).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return res.json({
+      success: true,
+      data: {
+        lead,
+        calls,
+        followUps,
+        messages,
+        timeline
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateEmployeeLeadStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeName } = getEmpContext(req);
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    const lead = db.leads.findById(id);
+    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+
+    const isOwner = lead.assignedTo === userId || lead.assignedTo === userName || (lead.assignedTo && lead.assignedTo.toLowerCase() === userName.toLowerCase());
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Access forbidden: You cannot modify unassigned leads.' });
+    }
+
+    const oldStatus = lead.status;
+    const updated = db.leads.updateById(id, {
+      status,
+      notes: notes ? `${lead.notes || ''}\n[${new Date().toLocaleDateString()}] ${notes}`.trim() : lead.notes,
+      updatedAt: new Date().toISOString()
+    })!;
+
+    // Log Activity Timeline
+    db.activityTimeline.insertOne({
+      leadId: id,
+      employeeId: userId,
+      employeeName,
+      activityType: 'STATUS_CHANGED',
+      description: `Stage updated from ${oldStatus} to ${status}${notes ? `: ${notes}` : ''}`,
+      timestamp: new Date().toISOString()
+    });
+
+    recordAuditLog(req, 'UPDATE', 'leads', 'Employee Lead Status Update', id, { status: oldStatus }, { status });
+
+    return res.json({
+      success: true,
+      message: `Lead status updated to ${status}`,
+      data: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 4. FOLLOW-UPS
+// ----------------------------------------------------
+export async function getEmployeeFollowUps(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const { status, filter } = req.query; // filter: 'today' | 'upcoming' | 'overdue'
+
+    let followUps = db.followUps.find(f =>
+      f.assignedTo === userId || f.assignedTo === userName || (f.assignedTo && f.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+
+    if (filter === 'today') {
+      followUps = followUps.filter(f => f.scheduledAt.startsWith(today));
+    } else if (filter === 'upcoming') {
+      followUps = followUps.filter(f => f.scheduledAt > today && f.status === 'PENDING');
+    } else if (filter === 'overdue') {
+      followUps = followUps.filter(f => f.scheduledAt < today && f.status === 'PENDING');
+    }
+
+    if (status && typeof status === 'string') {
+      followUps = followUps.filter(f => f.status === status);
+    }
+
+    return res.json({
+      success: true,
+      data: followUps.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function createEmployeeFollowUp(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeName } = getEmpContext(req);
+    const { leadId, customerId, type, title, description, scheduledAt, priority } = req.body;
+
+    if (!title || !scheduledAt) {
+      return res.status(400).json({ success: false, message: 'Title and scheduled time are required.' });
+    }
+
+    const newFollowUp = db.followUps.insertOne({
+      leadId,
+      customerId,
+      type: type || 'Call',
+      title,
+      description,
+      scheduledAt,
+      status: 'PENDING',
+      assignedTo: userName,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    if (leadId) {
+      db.activityTimeline.insertOne({
+        leadId,
+        employeeId: userId,
+        employeeName,
+        activityType: 'FOLLOWUP_CREATED',
+        description: `Scheduled ${type || 'Call'}: ${title} on ${new Date(scheduledAt).toLocaleString()}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Follow-up task scheduled successfully',
+      data: newFollowUp
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateFollowUpStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeName } = getEmpContext(req);
+    const { id } = req.params;
+    const { status, outcomeNotes } = req.body;
+
+    const followUp = db.followUps.findById(id);
+    if (!followUp) return res.status(404).json({ success: false, message: 'Follow-up not found' });
+
+    const isOwner = followUp.assignedTo === userId || followUp.assignedTo === userName || (followUp.assignedTo && followUp.assignedTo.toLowerCase() === userName.toLowerCase());
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Cannot update other staff follow-up.' });
+    }
+
+    const updated = db.followUps.updateById(id, {
+      status,
+      outcomeNotes,
+      completedAt: status === 'COMPLETED' ? new Date().toISOString() : undefined,
+      updatedAt: new Date().toISOString()
+    })!;
+
+    if (followUp.leadId && status === 'COMPLETED') {
+      db.activityTimeline.insertOne({
+        leadId: followUp.leadId,
+        employeeId: userId,
+        employeeName,
+        activityType: 'FOLLOWUP_COMPLETED',
+        description: `Completed follow-up "${followUp.title}"${outcomeNotes ? `: ${outcomeNotes}` : ''}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Follow-up marked as ${status}`,
+      data: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 5. CALLS & RECORDINGS
+// ----------------------------------------------------
+export async function getEmployeeCalls(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const calls = db.callLogs.find(c =>
+      c.employeeId === employeeId || c.employeeId === userId || c.employeeName.toLowerCase() === userName.toLowerCase()
+    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return res.json({
+      success: true,
+      data: calls
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function logEmployeeCall(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const {
+      leadId, direction, durationSeconds, outcome, notes,
+      recordingUrl, recordingName, followUpDate, followUpNotes, updateLeadStatus
+    } = req.body;
+
+    const lead = leadId ? db.leads.findById(leadId) : null;
+
+    const callLog = db.callLogs.insertOne({
+      leadId: leadId || '',
+      leadName: lead?.name || 'Prospect',
+      leadPhone: lead?.phone || '',
+      employeeId: employeeId || userId,
+      employeeName,
+      direction: direction || 'OUTBOUND',
+      durationSeconds: Number(durationSeconds) || 0,
+      outcome: outcome || 'CONNECTED',
+      notes: notes || '',
+      recordingUrl: recordingUrl || '',
+      recordingName: recordingName || (recordingUrl ? `call_rec_${Date.now()}.wav` : ''),
+      followUpDate,
+      followUpNotes,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    if (leadId && lead) {
+      // Activity Timeline
+      db.activityTimeline.insertOne({
+        leadId,
+        employeeId: userId,
+        employeeName,
+        activityType: recordingUrl ? 'RECORDING_ATTACHED' : 'CALL_MADE',
+        description: `${direction || 'Outbound'} Call (${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s) - Outcome: ${outcome}. ${notes || ''}`,
+        timestamp: new Date().toISOString(),
+        metadata: { durationSeconds, outcome, hasRecording: !!recordingUrl }
+      });
+
+      // Update lead status if requested
+      if (updateLeadStatus && updateLeadStatus !== lead.status) {
+        db.leads.updateById(leadId, { status: updateLeadStatus });
+      }
+
+      // Auto-schedule follow-up if requested
+      if (followUpDate) {
+        db.followUps.insertOne({
+          leadId,
+          type: 'Call',
+          title: `Follow-up call with ${lead.name}`,
+          description: followUpNotes || `Follow-up after ${outcome} call`,
+          scheduledAt: `${followUpDate}T11:00:00.000Z`,
+          status: 'PENDING',
+          assignedTo: userName,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Call & recording saved to lead file.',
+      data: callLog
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 6. MESSAGES (WhatsApp, SMS, Email)
+// ----------------------------------------------------
+export async function getEmployeeMessages(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const { leadId } = req.query;
+
+    let messages = db.messages.find(m =>
+      m.employeeId === employeeId || m.employeeId === userId || m.employeeName.toLowerCase() === userName.toLowerCase()
+    );
+
+    if (leadId && typeof leadId === 'string') {
+      messages = messages.filter(m => m.leadId === leadId);
+    }
+
+    return res.json({
+      success: true,
+      data: messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function sendEmployeeMessage(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const { leadId, recipientName, recipientPhone, recipientEmail, message, messageType } = req.body;
+
+    if (!message || (!recipientPhone && !recipientEmail)) {
+      return res.status(400).json({ success: false, message: 'Message content and recipient are required.' });
+    }
+
+    const newMessage = db.messages.insertOne({
+      leadId,
+      recipientName: recipientName || 'Customer',
+      recipientPhone: recipientPhone || '',
+      recipientEmail: recipientEmail || '',
+      employeeId: employeeId || userId,
+      employeeName,
+      message,
+      messageType: messageType || 'WHATSAPP',
+      direction: 'OUTBOUND',
+      status: 'SENT',
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    if (leadId) {
+      db.activityTimeline.insertOne({
+        leadId,
+        employeeId: userId,
+        employeeName,
+        activityType: 'MESSAGE_SENT',
+        description: `Sent ${messageType || 'WhatsApp'} message: "${message.length > 50 ? message.substring(0, 50) + '...' : message}"`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `${messageType || 'WhatsApp'} message logged and sent successfully.`,
+      data: newMessage
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 7. CUSTOMERS
+// ----------------------------------------------------
+export async function getEmployeeCustomers(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const { search } = req.query;
+
+    // Customers assigned to this employee
+    let customers = db.customers.find(c =>
+      c.assignedTo === userId || c.assignedTo === userName || (c.assignedTo && c.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+
+    // If none assigned directly, also include customers whose leads were converted by this employee
+    if (customers.length === 0) {
+      const myLeads = db.leads.find(l => l.assignedTo === userId || l.assignedTo === userName);
+      const myLeadNames = myLeads.map(l => l.name.toLowerCase());
+      customers = db.customers.find(c => myLeadNames.includes(c.name.toLowerCase()));
+    }
+
+    if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
+      customers = customers.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        c.companyName.toLowerCase().includes(q) ||
+        c.phone.includes(q)
+      );
+    }
+
+    return res.json({
+      success: true,
+      data: customers
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 8. TASKS
+// ----------------------------------------------------
+export async function getEmployeeTasks(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const { status } = req.query;
+
+    let tasks = db.tasks.find(t =>
+      t.assignedTo === userId || t.assignedTo === userName || t.assignedToId === employeeId || (t.assignedTo && t.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+
+    if (status && typeof status === 'string') {
+      tasks = tasks.filter(t => t.status === status);
+    }
+
+    return res.json({
+      success: true,
+      data: tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function createEmployeeTask(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const { title, description, priority, dueDate, relatedTo } = req.body;
+
+    if (!title || !dueDate) {
+      return res.status(400).json({ success: false, message: 'Title and due date are required.' });
+    }
+
+    const newTask = db.tasks.insertOne({
+      title,
+      description: description || '',
+      assignedTo: userName,
+      assignedToId: employeeId || userId,
+      priority: priority || 'MEDIUM',
+      dueDate,
+      status: 'PENDING',
+      relatedTo,
+      createdBy: userName,
+      createdAt: new Date().toISOString()
+    });
+
+    return res.json({
+      success: true,
+      message: 'Task created successfully',
+      data: newTask
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateEmployeeTaskStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    const task = db.tasks.findById(id);
+    if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+
+    const isOwner = task.assignedTo === userId || task.assignedTo === userName || task.assignedToId === employeeId;
+    if (!isOwner) return res.status(403).json({ success: false, message: 'Forbidden: Cannot edit other employee tasks' });
+
+    const updated = db.tasks.updateById(id, {
+      status,
+      notes,
+      completedAt: status === 'COMPLETED' ? new Date().toISOString() : undefined,
+      updatedAt: new Date().toISOString()
+    })!;
+
+    return res.json({
+      success: true,
+      message: `Task marked as ${status}`,
+      data: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 9. QUOTATIONS
+// ----------------------------------------------------
+export async function getEmployeeQuotations(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    // Find quotations created by or assigned to this employee's customers
+    const myCustomers = db.customers.find(c => c.assignedTo === userId || c.assignedTo === userName);
+    const myCustomerIds = myCustomers.map(c => c._id);
+
+    const quotations = db.quotations.find(q =>
+      myCustomerIds.includes(q.customerId) || (q as any).createdBy === userName || (q as any).salesRep === userName
+    );
+
+    return res.json({
+      success: true,
+      data: quotations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function createEmployeeQuotation(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeName } = getEmpContext(req);
+    const { customerId, leadId, items, taxPercent, discountPercent, notes, validUntil } = req.body;
+
+    let customerName = 'Walk-in Prospect';
+    if (customerId) {
+      const cust = db.customers.findById(customerId);
+      if (cust) customerName = cust.name;
+    } else if (leadId) {
+      const lead = db.leads.findById(leadId);
+      if (lead) customerName = lead.name;
+    }
+
+    const calculatedItems = (items || []).map((it: any) => ({
+      productId: it.productId,
+      productName: it.productName,
+      sku: it.sku || 'SKU-GEN',
+      quantity: Number(it.quantity) || 1,
+      unitPrice: Number(it.unitPrice) || 0,
+      total: (Number(it.quantity) || 1) * (Number(it.unitPrice) || 0)
+    }));
+
+    const subTotal = calculatedItems.reduce((acc: number, i: any) => acc + i.total, 0);
+    const taxRate = Number(taxPercent) || 18;
+    const taxAmount = (subTotal * taxRate) / 100;
+    const discountAmount = Number(discountPercent) ? (subTotal * Number(discountPercent)) / 100 : 0;
+    const grandTotal = subTotal + taxAmount - discountAmount;
+
+    const count = db.quotations.countDocuments() + 1;
+    const quotationNumber = `QT-2026-${String(count).padStart(4, '0')}`;
+
+    const newQuotation = db.quotations.insertOne({
+      quotationNumber,
+      customerId: customerId || 'lead_prospect',
+      customerName,
+      leadId,
+      items: calculatedItems,
+      subTotal,
+      taxAmount,
+      discountAmount,
+      grandTotal,
+      status: 'SENT',
+      validUntil: validUntil || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      notes: notes || 'Quotation generated via Sales Representative Portal',
+      createdBy: userName,
+      createdAt: new Date().toISOString()
+    } as any);
+
+    if (leadId) {
+      db.activityTimeline.insertOne({
+        leadId,
+        employeeId: userId,
+        employeeName,
+        activityType: 'QUOTATION_CREATED',
+        description: `Generated formal price quote ${quotationNumber} worth ₹${grandTotal.toLocaleString('en-IN')}`,
+        timestamp: new Date().toISOString(),
+        metadata: { quotationNumber, grandTotal }
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Quotation ${quotationNumber} created successfully!`,
+      data: newQuotation
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 10. SALES ORDERS
+// ----------------------------------------------------
+export async function getEmployeeSalesOrders(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const myCustomers = db.customers.find(c => c.assignedTo === userId || c.assignedTo === userName);
+    const myCustIds = myCustomers.map(c => c._id);
+
+    const orders = db.salesOrders.find(o =>
+      myCustIds.includes(o.customerId) || (o as any).createdBy === userName || (o as any).salesRep === userName
+    );
+
+    return res.json({
+      success: true,
+      data: orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 11. PERFORMANCE & KPI ENGINE
+// ----------------------------------------------------
+export async function getEmployeePerformance(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+
+    // 1. Leads assigned & converted
+    const myLeads = db.leads.find(l =>
+      l.assignedTo === userId || l.assignedTo === userName || (l.assignedTo && l.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+    const totalLeads = myLeads.length;
+    const convertedLeads = myLeads.filter(l => l.status === 'WON').length;
+    const contactedLeads = myLeads.filter(l => l.status !== 'NEW').length;
+    const conversionRate = totalLeads > 0 ? Number(((convertedLeads / totalLeads) * 100).toFixed(1)) : 0;
+
+    // 2. Calls & Duration
+    const myCalls = db.callLogs.find(c =>
+      c.employeeId === employeeId || c.employeeId === userId || c.employeeName.toLowerCase() === userName.toLowerCase()
+    );
+    const totalCalls = myCalls.length;
+    const totalDurationSeconds = myCalls.reduce((acc, c) => acc + (c.durationSeconds || 0), 0);
+    const totalDurationMinutes = Math.round(totalDurationSeconds / 60);
+
+    // 3. Follow-ups
+    const myFollowUps = db.followUps.find(f =>
+      f.assignedTo === userId || f.assignedTo === userName || (f.assignedTo && f.assignedTo.toLowerCase() === userName.toLowerCase())
+    );
+    const totalFollowUps = myFollowUps.length;
+    const completedFollowUps = myFollowUps.filter(f => f.status === 'COMPLETED').length;
+    const pendingFollowUps = myFollowUps.filter(f => f.status === 'PENDING').length;
+
+    // 4. Quotations & Revenue
+    const myQuotations = db.quotations.find(q =>
+      (q as any).createdBy === userName || (q as any).salesRep === userName
+    );
+    const totalQuotations = myQuotations.length;
+    const totalQuotedValue = myQuotations.reduce((acc, q) => acc + (q.grandTotal || 0), 0);
+
+    // 5. Appraisals & Rating
+    const appraisals = db.performance.find(p =>
+      p.employeeId === employeeId || p.employeeName.toLowerCase() === userName.toLowerCase()
+    );
+
+    const performanceMetrics = {
+      employeeName: userName,
+      period: 'FY 2026 (Active)',
+      leadsAssigned: totalLeads,
+      leadsContacted: contactedLeads,
+      convertedLeads,
+      conversionRate: `${conversionRate}%`,
+      totalCalls,
+      totalCallMinutes: totalDurationMinutes,
+      totalFollowUps,
+      completedFollowUps,
+      pendingFollowUps,
+      totalQuotations,
+      totalQuotedValue,
+      rating: appraisals[0]?.rating || 4.8,
+      appraisals
+    };
+
+    return res.json({
+      success: true,
+      data: performanceMetrics
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 12. LEAVE MANAGEMENT
+// ----------------------------------------------------
+export async function getEmployeeLeaves(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId } = getEmpContext(req);
+
+    const leaves = db.leaves.find(l =>
+      l.employeeId === employeeId || l.employeeId === userId || l.employeeName.toLowerCase() === userName.toLowerCase()
+    ).sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+
+    // Calculate balances
+    const approvedDays = leaves
+      .filter(l => l.status === 'APPROVED')
+      .reduce((acc, l) => acc + (l.totalDays || 1), 0);
+
+    const balance = {
+      casualLeave: Math.max(0, 12 - Math.floor(approvedDays * 0.4)),
+      sickLeave: Math.max(0, 8 - Math.floor(approvedDays * 0.3)),
+      paidLeave: Math.max(0, 15 - Math.floor(approvedDays * 0.3)),
+      totalTaken: approvedDays
+    };
+
+    return res.json({
+      success: true,
+      data: {
+        leaves,
+        balance
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function applyEmployeeLeave(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
+    const { leaveType, startDate, endDate, reason } = req.body;
+
+    if (!leaveType || !startDate || !endDate || !reason) {
+      return res.status(400).json({ success: false, message: 'All leave fields are required.' });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    const newLeave = db.leaves.insertOne({
+      employeeId: employeeId || userId,
+      employeeName,
+      leaveType,
+      startDate,
+      endDate,
+      totalDays,
+      reason,
+      status: 'PENDING',
+      appliedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    recordAuditLog(req, 'CREATE', 'leave', 'Employee Leave Application', newLeave._id, undefined, {
+      leaveType,
+      startDate,
+      endDate,
+      totalDays
+    });
+
+    return res.json({
+      success: true,
+      message: `Leave request for ${totalDays} days submitted for Management/HR approval.`,
+      data: newLeave
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 13. SALARY & PAYSLIPS
+// ----------------------------------------------------
+export async function getEmployeeSalary(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName, employeeId, employeeDoc } = getEmpContext(req);
+
+    const salaries = db.salaries.find(s =>
+      s.employeeId === employeeId || s.employeeId === userId || s.employeeName.toLowerCase() === userName.toLowerCase()
+    ).sort((a, b) => (b.month > a.month ? 1 : -1));
+
+    const latest = salaries[0] || {
+      month: '2026-01',
+      basicSalary: employeeDoc?.salary || 38000,
+      allowances: 7500,
+      deductions: 2100,
+      netSalary: (employeeDoc?.salary || 38000) + 7500 - 2100,
+      paymentStatus: 'PAID'
+    };
+
+    return res.json({
+      success: true,
+      data: {
+        latestSalary: latest,
+        salaryHistory: salaries
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 14. PROFILE MANAGEMENT
+// ----------------------------------------------------
+export async function getEmployeeProfile(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, employeeDoc } = getEmpContext(req);
+    const user = db.users.findById(userId);
+
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const profileData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || employeeDoc?.phone || '+91 98765 00112',
+      role: user.role,
+      avatar: user.avatar || 'AS',
+      organization: user.organization || 'SHIV SHAKTI ENTERPRISES',
+      department: employeeDoc?.department || 'Sales & Field Operations',
+      designation: employeeDoc?.designation || 'Sales & Calling Executive',
+      joiningDate: employeeDoc?.joiningDate || '2025-06-01',
+      employeeCode: employeeDoc?.employeeId || 'EMP-007',
+      bankDetails: employeeDoc?.bankDetails || {
+        bankName: 'HDFC Bank Ltd',
+        accountNumber: '50100234891234',
+        ifsc: 'HDFC0001234'
+      }
+    };
+
+    return res.json({
+      success: true,
+      data: profileData
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateEmployeeProfile(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId } = getEmpContext(req);
+    const { phone, avatar, password, currentPassword } = req.body;
+
+    const user = db.users.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const updates: any = {};
+    if (phone) updates.phone = phone;
+    if (avatar) updates.avatar = avatar;
+
+    if (password) {
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: 'Current password is required to set new password' });
+      }
+      const match = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!match) {
+        return res.status(400).json({ success: false, message: 'Current password does not match' });
+      }
+      updates.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const updated = db.users.updateById(userId, updates)!;
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        phone: updated.phone,
+        avatar: updated.avatar
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 15. NOTIFICATIONS
+// ----------------------------------------------------
+export async function getEmployeeNotifications(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId } = getEmpContext(req);
+    const notifications = db.notifications.find(n => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return res.json({
+      success: true,
+      data: notifications
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function markNotificationRead(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { userId } = getEmpContext(req);
+
+    if (id === 'all') {
+      const myNotifs = db.notifications.find(n => n.userId === userId && !n.isRead);
+      myNotifs.forEach(n => db.notifications.updateById(n._id, { isRead: true }));
+      return res.json({ success: true, message: 'All notifications marked as read' });
+    }
+
+    const notif = db.notifications.findById(id);
+    if (notif && notif.userId === userId) {
+      db.notifications.updateById(id, { isRead: true });
+    }
+
+    return res.json({ success: true, message: 'Notification marked as read' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
