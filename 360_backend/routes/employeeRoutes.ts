@@ -57,6 +57,8 @@ router.get('/performance', empCtrl.getEmployeePerformance);
 // 12. Leave
 router.get('/leave', empCtrl.getEmployeeLeaves);
 router.post('/leave', empCtrl.applyEmployeeLeave);
+router.put('/leave/:id', empCtrl.updateEmployeeLeave);
+router.delete('/leave/:id', empCtrl.cancelEmployeeLeave);
 
 // 13. Salary
 router.get('/salary', empCtrl.getEmployeeSalary);

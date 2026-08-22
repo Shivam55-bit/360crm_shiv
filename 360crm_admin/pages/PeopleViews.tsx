@@ -359,14 +359,19 @@ export const AttendanceView: React.FC = () => {
         eDate = new Date().toISOString().split('T')[0];
       }
 
-      const token = localStorage.getItem('token');
-      const url = `http://localhost:5000/api/admin/activity/export?employeeId=${targetEmp}&startDate=${sDate}&endDate=${eDate}&format=${exportFormat}`;
+      const token = localStorage.getItem('360crm_token');
+      const apiBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+      const url = `${apiBaseUrl}/admin/activity/export?employeeId=${encodeURIComponent(targetEmp)}&startDate=${encodeURIComponent(sDate)}&endDate=${encodeURIComponent(eDate)}&format=${exportFormat}`;
       
       const response = await fetch(url, {
         headers: {
           Authorization: token ? `Bearer ${token}` : ''
         }
       });
+
+      if (!response.ok) {
+        throw new Error(`Report request failed with status ${response.status}`);
+      }
 
       if (exportFormat === 'pdf') {
         const html = await response.text();

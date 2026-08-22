@@ -998,12 +998,17 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
                 type="button"
                 onClick={async () => {
                   try {
-                    const token = localStorage.getItem('token');
+                    const authToken = token || localStorage.getItem('360crm_token');
                     const todayStr = new Date().toISOString().split('T')[0];
-                    const url = `http://localhost:5000/api/activity/export?startDate=${todayStr}&endDate=${todayStr}&format=csv`;
+                    const employeeId = user?.id || user?.userId || user?._id || '';
+                    const apiBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+                    const url = `${apiBaseUrl}/activity/export?employeeId=${encodeURIComponent(employeeId)}&startDate=${todayStr}&endDate=${todayStr}&format=csv`;
                     const response = await fetch(url, {
-                      headers: { Authorization: token ? `Bearer ${token}` : '' }
+                      headers: { Authorization: authToken ? `Bearer ${authToken}` : '' }
                     });
+                    if (!response.ok) {
+                      throw new Error(`Report request failed with status ${response.status}`);
+                    }
                     const blob = await response.blob();
                     const downloadUrl = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');

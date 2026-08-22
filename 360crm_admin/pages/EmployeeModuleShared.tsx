@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Download, Filter, Plus, Search, X } from 'lucide-react';
 import { api } from '@/src/services/api';
 
-export type EmployeeRecord = { id: string; name: string; detail: string; status: string; value?: string; date?: string };
+export type EmployeeRecord = { id: string; name: string; detail: string; status: string; value?: string; date?: string; source?: any };
 
 export const toEmployeeRecord = (item: any, index: number): EmployeeRecord => ({
   id: item?._id || item?.id || `record-${index}`,
@@ -11,6 +11,7 @@ export const toEmployeeRecord = (item: any, index: number): EmployeeRecord => ({
   status: item?.status || item?.paymentStatus || (item?.isRead === false ? 'UNREAD' : 'READ'),
   value: item?.totalSpent ? `₹${Number(item.totalSpent).toLocaleString('en-IN')}` : item?.grandTotal ? `₹${Number(item.grandTotal).toLocaleString('en-IN')}` : item?.netSalary ? `₹${Number(item.netSalary).toLocaleString('en-IN')}` : undefined,
   date: item?.createdAt || item?.appliedAt || item?.dueDate || item?.orderDate || item?.month,
+  source: item,
 });
 
 export const useEmployeeRecords = (endpoint: string, fallback: EmployeeRecord[], unwrap?: (data: any) => any[]) => {

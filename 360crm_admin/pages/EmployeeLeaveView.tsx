@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { api } from '@/src/services/api';
-import { CalendarDays, CheckCircle2, Clock3, Plus, X } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { DetailDrawer, EmployeePage, EmployeeRecord, Stats, useEmployeeRecords } from './EmployeeModuleShared';
 
 export const EmployeeLeaveView: React.FC = () => {
   const [selected, setSelected] = useState<EmployeeRecord | null>(null);
+  const [editingLeave, setEditingLeave] = useState<EmployeeRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -15,6 +16,11 @@ export const EmployeeLeaveView: React.FC = () => {
   const [reason, setReason] = useState('');
 
   const data = useEmployeeRecords('/employee/leave', [], value => value?.leaves || []);
+  const calendarDate = new Date();
+  const calendarYear = calendarDate.getFullYear();
+  const calendarMonth = calendarDate.getMonth();
+  const calendarStartOffset = (new Date(calendarYear, calendarMonth, 1).getDay() + 6) % 7;
+  const calendarDaysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
 
   const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +31,19 @@ export const EmployeeLeaveView: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const response = await api.post('/employee/leave', {
+      const payload = {
         leaveType,
         startDate,
         endDate,
         reason
-      });
+      };
+      const response = editingLeave
+        ? await api.put(`/employee/leave/${editingLeave.id}`, payload)
+        : await api.post('/employee/leave', payload);
 
       if (response.success) {
         setIsModalOpen(false);
+        setEditingLeave(null);
         setReason('');
         await data.reload();
       } else {
@@ -46,6 +56,49 @@ export const EmployeeLeaveView: React.FC = () => {
     }
   };
 
+  const openEdit = (record: EmployeeRecord) => {
+    const leave = record.source;
+    setEditingLeave(record);
+    setLeaveType(leave?.leaveType || 'CASUAL');
+    setStartDate(leave?.startDate || new Date().toISOString().slice(0, 10));
+    setEndDate(leave?.endDate || new Date(Date.now() + 86400000).toISOString().slice(0, 10));
+    setReason(leave?.reason || '');
+    setIsModalOpen(true);
+  };
+
+  const cancelLeave = async (record: EmployeeRecord) => {
+    if (!window.confirm('Are you sure you want to delete this leave request?')) return;
+
+    try {
+      setSubmitting(true);
+      const response = await api.delete(`/employee/leave/${record.id}`);
+      if (response.success) {
+        setSelected(null);
+        await data.reload();
+      } else {
+        alert(response.message || 'Failed to delete leave request');
+      }
+    } catch (err: any) {
+      alert('Error deleting leave request: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const approvedLeaveDays = new Set(
+    data.records
+      .filter(record => record.source?.status === 'APPROVED')
+      .flatMap(record => {
+        const start = new Date(`${record.source.startDate}T00:00:00`);
+        const end = new Date(`${record.source.endDate}T00:00:00`);
+        const days: string[] = [];
+        for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
+          days.push(`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`);
+        }
+        return days;
+      })
+  );
+
   return (
     <EmployeePage
       eyebrow="People workspace"
@@ -53,11 +106,11 @@ export const EmployeeLeaveView: React.FC = () => {
       description="Review your leave balance, upcoming time off and approval history."
       icon={CalendarDays}
       action="Apply leave"
-      onAction={() => setIsModalOpen(true)}
+      onAction={() => { setEditingLeave(null); setIsModalOpen(true); }}
     >
       <Stats
         items={[
-          { label: 'Available Leave', value: '18 days', detail: 'Annual quota', tone: 'text-blue-600' },
+          { label: 'Available Leave', value: `${Math.max(0, 18 - data.records.filter(row => row.source?.status === 'APPROVED').reduce((total, row) => total + (row.source?.totalDays || 0), 0))} days`, detail: 'Annual quota', tone: 'text-blue-600' },
           { label: 'Approved Requests', value: String(data.records.filter(row => row.status === 'APPROVED').length), detail: 'Past approvals', tone: 'text-emerald-600' },
           { label: 'Pending Requests', value: String(data.records.filter(row => row.status === 'PENDING' || row.status === 'Under HR review').length), detail: 'Under HR review', tone: 'text-amber-600' },
           { label: 'Total Submitted', value: String(data.records.length), detail: 'Leave history', tone: 'text-blue-600' }
@@ -78,18 +131,29 @@ export const EmployeeLeaveView: React.FC = () => {
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
               <span key={`${day}-${index}`} className="py-2">{day}</span>
             ))}
-            {Array.from({ length: 31 }, (_, index) => (
+            {Array.from({ length: calendarStartOffset }, (_, index) => (
+              <span key={`empty-${index}`} aria-hidden="true" />
+            ))}
+            {Array.from({ length: calendarDaysInMonth }, (_, index) => {
+              const day = index + 1;
+              const isToday =
+                day === calendarDate.getDate() &&
+                calendarMonth === calendarDate.getMonth() &&
+                calendarYear === calendarDate.getFullYear();
+
+              return (
               <button
-                key={index}
+                key={day}
                 className={`rounded-lg py-2.5 text-xs ${
-                  index + 1 === 20
+                  approvedLeaveDays.has(`${calendarYear}-${calendarMonth}-${day}`) || isToday
                     ? 'bg-blue-600 font-black text-white'
                     : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                {index + 1}
+                {day}
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -98,18 +162,17 @@ export const EmployeeLeaveView: React.FC = () => {
           <h2 className="text-sm font-black text-slate-900 mb-3">Recent Requests</h2>
           <div className="space-y-3">
             {data.records.map(row => (
-              <button
+              <div
                 key={row.id}
-                onClick={() => setSelected(row)}
                 className="flex w-full items-start justify-between gap-3 border-b border-slate-100 pb-3 text-left last:border-0 hover:bg-slate-50 p-2 rounded-xl transition-colors cursor-pointer"
               >
-                <div>
+                <button onClick={() => setSelected(row)} className="min-w-0 flex-1 text-left cursor-pointer">
                   <p className="text-xs font-bold text-slate-900">{row.name}</p>
                   <p className="mt-0.5 text-[11px] text-slate-500">{row.detail}</p>
                   <p className="mt-0.5 text-[10px] text-slate-400">
                     {row.date ? new Date(row.date).toLocaleDateString() : 'Today'}
                   </p>
-                </div>
+                </button>
                 <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                   row.status === 'APPROVED'
                     ? 'bg-emerald-50 text-emerald-700'
@@ -119,7 +182,17 @@ export const EmployeeLeaveView: React.FC = () => {
                 }`}>
                   {row.status === 'PENDING' ? 'Under HR review' : row.status}
                 </span>
-              </button>
+                {row.status !== 'CANCELLED' && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button onClick={() => openEdit(row)} title="Edit" className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 cursor-pointer">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => cancelLeave(row)} title="Delete / Cancel" disabled={submitting} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer disabled:opacity-50">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
             {data.records.length === 0 && (
               <p className="text-xs text-slate-400 py-6 text-center">No leave applications yet.</p>
@@ -135,9 +208,9 @@ export const EmployeeLeaveView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-blue-600" />
-                <span>Apply for Leave</span>
+                <span>{editingLeave ? 'Edit Leave Request' : 'Apply for Leave'}</span>
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer">
+              <button onClick={() => { setIsModalOpen(false); setEditingLeave(null); }} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -195,7 +268,7 @@ export const EmployeeLeaveView: React.FC = () => {
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingLeave(null); }}
                   className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all cursor-pointer"
                 >
                   Cancel
@@ -206,7 +279,7 @@ export const EmployeeLeaveView: React.FC = () => {
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/25 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{submitting ? 'Submitting...' : 'Submit Application'}</span>
+                  <span>{submitting ? 'Saving...' : editingLeave ? 'Save Changes' : 'Submit Application'}</span>
                 </button>
               </div>
             </form>

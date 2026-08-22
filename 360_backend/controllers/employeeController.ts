@@ -914,7 +914,7 @@ export async function getEmployeeLeaves(req: AuthenticatedRequest, res: Response
     const { userId, userName, employeeId } = getEmpContext(req);
 
     const leaves = db.leaves.find(l =>
-      l.employeeId === employeeId || l.employeeId === userId || l.employeeName.toLowerCase() === userName.toLowerCase()
+      l.employeeId === employeeId || l.employeeId === userId
     ).sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
 
     // Calculate balances
@@ -950,10 +950,12 @@ export async function applyEmployeeLeave(req: AuthenticatedRequest, res: Respons
       return res.status(400).json({ success: false, message: 'All leave fields are required.' });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+      return res.status(400).json({ success: false, message: 'End date must be on or after the start date.' });
+    }
+    const totalDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
 
     const newLeave = db.leaves.insertOne({
       employeeId: employeeId || userId,
@@ -980,6 +982,66 @@ export async function applyEmployeeLeave(req: AuthenticatedRequest, res: Respons
       message: `Leave request for ${totalDays} days submitted for Management/HR approval.`,
       data: newLeave
     });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateEmployeeLeave(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, employeeId, employeeName } = getEmpContext(req);
+    const leave = db.leaves.findById(req.params.id);
+    if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found.' });
+
+    const ownsLeave = leave.employeeId === employeeId || leave.employeeId === userId;
+    if (!ownsLeave) return res.status(403).json({ success: false, message: 'You can only modify your own leave requests.' });
+
+    const { leaveType, startDate, endDate, reason } = req.body;
+    if (!leaveType || !startDate || !endDate || !reason) {
+      return res.status(400).json({ success: false, message: 'All leave fields are required.' });
+    }
+
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+      return res.status(400).json({ success: false, message: 'End date must be on or after the start date.' });
+    }
+
+    const totalDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+    const updated = db.leaves.updateById(leave._id, {
+      employeeName: leave.employeeName || employeeName,
+      leaveType,
+      startDate,
+      endDate,
+      totalDays
+    });
+
+    recordAuditLog(req, 'UPDATE', 'leaves', 'Employee Leave Update', leave._id, leave, updated);
+    return res.json({ success: true, message: 'Leave request updated successfully.', data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function cancelEmployeeLeave(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, employeeId } = getEmpContext(req);
+    const leave = db.leaves.findById(req.params.id);
+    if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found.' });
+
+    const ownsLeave = leave.employeeId === employeeId || leave.employeeId === userId;
+    if (!ownsLeave) return res.status(403).json({ success: false, message: 'You can only cancel your own leave requests.' });
+
+    const updated = db.leaves.updateById(leave._id, {
+      status: 'CANCELLED',
+      reviewedBy: undefined,
+      approvedBy: undefined,
+      reviewedAt: new Date().toISOString(),
+      reviewNotes: 'Cancelled by employee'
+    });
+
+    recordAuditLog(req, 'UPDATE', 'leaves', 'Employee Leave Cancellation', leave._id, { status: leave.status }, { status: 'CANCELLED' });
+    return res.json({ success: true, message: 'Leave request cancelled successfully.', data: updated });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
