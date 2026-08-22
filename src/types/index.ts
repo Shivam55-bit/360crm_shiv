@@ -7,7 +7,8 @@ import {
   InvoiceDoc, PaymentDoc, ExpenseDoc, EmployeeDoc, AttendanceDoc,
   SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc,
   AuditLogDoc, FollowUpDoc, StockTransactionDoc, CreditNoteDoc, CallLogDoc,
-  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
+  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc,
+  AttendanceSettingsDoc, OfficeLocation, ActivitySessionDoc, DeviceDoc, AttendanceBreak, VerificationStamp
 } from '../../360_backend/database/types';
 
 export type User = UserDoc;
@@ -42,3 +43,7 @@ export type Task = TaskDoc;
 export type Message = MessageDoc;
 export type ActivityTimeline = ActivityTimelineDoc;
 export type Notification = NotificationDoc;
+export type AttendanceSettings = AttendanceSettingsDoc;
+export type OfficeLocationType = OfficeLocation;
+export type ActivitySession = ActivitySessionDoc;
+export type Device = DeviceDoc;

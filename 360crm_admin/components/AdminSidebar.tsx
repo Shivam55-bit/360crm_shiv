@@ -171,6 +171,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, 
       isDropdown: false,
       items: [
         { id: 'employees', label: 'Employees', icon: User, permission: 'employees.view' },
+        { id: 'leave_requests', label: 'Leave Requests', icon: CalendarDays, permission: 'employees.view' },
         { id: 'attendance', label: 'Attendance', icon: UserCheck, permission: 'attendance.view' },
         { id: 'salary', label: 'Salary', icon: CalendarDays, permission: 'salary.view' },
         { id: 'performance', label: 'Performance', icon: BarChart3, permission: 'performance.view' },

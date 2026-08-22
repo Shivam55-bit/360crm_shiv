@@ -10,6 +10,7 @@ import * as salesCtrl from '../controllers/salesControllers';
 import * as invCtrl from '../controllers/inventoryControllers';
 import * as acctCtrl from '../controllers/accountsControllers';
 import * as hrCtrl from '../controllers/peopleControllers';
+import * as actCtrl from '../controllers/activityController';
 import * as mktCtrl from '../controllers/marketingControllers';
 import * as sysCtrl from '../controllers/systemControllers';
 import employeeRouter from './employeeRoutes';
@@ -42,7 +43,11 @@ router.get('/permissions', authenticateToken, roleCtrl.getAllPermissions);
 
 // ==================== SALES - LEADS ====================
 router.get('/leads', authenticateToken, requirePermission('leads.view'), salesCtrl.getLeads);
+router.get('/sales-reps', authenticateToken, salesCtrl.getSalesReps);
 router.post('/leads', authenticateToken, requirePermission('leads.create'), salesCtrl.createLead);
+router.patch('/leads/:id/assign', authenticateToken, requirePermission('leads.update'), salesCtrl.assignLead);
+router.post('/leads/bulk-assign', authenticateToken, requirePermission('leads.update'), salesCtrl.bulkAssignLeads);
+router.post('/leads/:id/convert', authenticateToken, requirePermission('leads.update'), salesCtrl.convertLead);
 router.put('/leads/:id', authenticateToken, requirePermission('leads.update'), salesCtrl.updateLead);
 router.delete('/leads/:id', authenticateToken, requirePermission('leads.delete'), salesCtrl.deleteLead);
 
@@ -54,6 +59,7 @@ router.delete('/call-logs/:id', authenticateToken, salesCtrl.deleteCallLog);
 
 // ==================== SALES - CUSTOMERS ====================
 router.get('/customers', authenticateToken, requirePermission('customers.view'), salesCtrl.getCustomers);
+router.get('/customers/:id/details', authenticateToken, requirePermission('customers.view'), salesCtrl.getCustomerDetails);
 router.post('/customers', authenticateToken, requirePermission('customers.create'), salesCtrl.createCustomer);
 router.put('/customers/:id', authenticateToken, requirePermission('customers.update'), salesCtrl.updateCustomer);
 router.delete('/customers/:id', authenticateToken, requirePermission('customers.delete'), salesCtrl.deleteCustomer);
@@ -61,17 +67,23 @@ router.delete('/customers/:id', authenticateToken, requirePermission('customers.
 // ==================== SALES - QUOTATIONS ====================
 router.get('/quotations', authenticateToken, requirePermission('quotations.view'), salesCtrl.getQuotations);
 router.post('/quotations', authenticateToken, requirePermission('quotations.create'), salesCtrl.createQuotation);
+router.patch('/quotations/:id/approve', authenticateToken, requirePermission('quotations.create'), salesCtrl.approveQuotation);
 router.post('/quotations/:id/convert', authenticateToken, requirePermission('quotations.convert'), salesCtrl.convertQuotationToSalesOrder);
 
 // ==================== SALES - ORDERS ====================
 router.get('/sales-orders', authenticateToken, requirePermission('sales_orders.view'), salesCtrl.getSalesOrders);
 router.post('/sales-orders', authenticateToken, requirePermission('sales_orders.create'), salesCtrl.createSalesOrder);
+router.patch('/sales-orders/:id/status', authenticateToken, requirePermission('sales_orders.approve'), salesCtrl.updateSalesOrderStatus);
 router.patch('/sales-orders/:id/approve', authenticateToken, requirePermission('sales_orders.approve'), salesCtrl.approveSalesOrder);
+router.post('/sales-orders/:id/generate-invoice', authenticateToken, requirePermission('invoices.create'), salesCtrl.generateOrderInvoice);
 
 // ==================== SALES - FOLLOW-UPS ====================
 router.get('/follow-ups', authenticateToken, requirePermission('follow_ups.view'), salesCtrl.getFollowUps);
 router.post('/follow-ups', authenticateToken, requirePermission('follow_ups.create'), salesCtrl.createFollowUp);
 router.patch('/follow-ups/:id/complete', authenticateToken, requirePermission('follow_ups.update'), salesCtrl.completeFollowUp);
+
+// ==================== SALES - REPORTS ====================
+router.get('/sales/reports', authenticateToken, requirePermission('sales_reports.view'), salesCtrl.getSalesReportsData);
 
 // ==================== STORE / INVENTORY ====================
 router.get('/products', authenticateToken, requirePermission('products.view'), invCtrl.getProducts);
@@ -101,6 +113,7 @@ router.patch('/purchases/:id/receive', authenticateToken, requirePermission('pur
 
 // ==================== ACCOUNTS ====================
 router.get('/invoices', authenticateToken, requirePermission('invoices.view'), acctCtrl.getInvoices);
+router.get('/invoices/:id', authenticateToken, requirePermission('invoices.view'), acctCtrl.getInvoiceById);
 router.post('/invoices', authenticateToken, requirePermission('invoices.create'), acctCtrl.createInvoice);
 
 router.get('/payments', authenticateToken, requirePermission('payments.view'), acctCtrl.getPayments);
@@ -121,18 +134,47 @@ router.post('/employees', authenticateToken, requirePermission('employees.create
 router.put('/employees/:id', authenticateToken, requirePermission('employees.update'), hrCtrl.updateEmployee);
 router.delete('/employees/:id', authenticateToken, requirePermission('employees.delete'), hrCtrl.deleteEmployee);
 
-// Attendance & Clock-In/Out
+// Attendance & Clock-In/Out & Breaks
 router.get('/attendance', authenticateToken, requirePermission('attendance.view'), hrCtrl.getAttendance);
 router.post('/attendance', authenticateToken, requirePermission('attendance.create'), hrCtrl.logAttendance);
 router.post('/attendance/clock-in', authenticateToken, hrCtrl.clockIn);
 router.post('/attendance/clock-out', authenticateToken, hrCtrl.clockOut);
+router.post('/attendance/break/start', authenticateToken, hrCtrl.startBreak);
+router.post('/attendance/break/end', authenticateToken, hrCtrl.endBreak);
+router.post('/attendance/break', authenticateToken, hrCtrl.toggleBreak);
 router.get('/attendance/today-status', authenticateToken, hrCtrl.getTodayAttendanceStatus);
+
+// Desktop Activity & Screen Time Telemetry
+router.post('/activity/sync', authenticateToken, actCtrl.syncActivityBatch);
+router.post('/activity/heartbeat', authenticateToken, actCtrl.registerDeviceHeartbeat);
+router.get('/activity/today', authenticateToken, actCtrl.getTodayActivity);
+router.get('/activity/applications', authenticateToken, actCtrl.getApplicationAnalytics);
+
+// Admin Attendance & Live Desktop Activity Monitoring
+router.get('/admin/attendance', authenticateToken, requirePermission('attendance.view'), actCtrl.getAdminAttendanceList);
+router.get('/admin/attendance/:employeeId', authenticateToken, requirePermission('attendance.view'), actCtrl.getAdminEmployeeActivityDetail);
+router.get('/admin/activity-summary', authenticateToken, requirePermission('attendance.view'), actCtrl.getAdminActivitySummary);
+router.get('/admin/device-status', authenticateToken, requirePermission('attendance.view'), actCtrl.getAdminDeviceStatus);
+router.get('/admin/reports/attendance', authenticateToken, requirePermission('reports.view'), actCtrl.getAttendanceReports);
+router.get('/admin/activity/export', authenticateToken, requirePermission('reports.view'), actCtrl.exportActivityReport);
+router.get('/activity/export', authenticateToken, actCtrl.exportActivityReport);
+
+// Attendance Security Settings & Geofencing (Super Admin)
+router.get('/attendance/settings', authenticateToken, hrCtrl.getAttendanceSettings);
+router.put('/attendance/settings', authenticateToken, requireRole('SUPER_ADMIN'), hrCtrl.updateAttendanceSettings);
+router.post('/attendance/settings/locations', authenticateToken, requireRole('SUPER_ADMIN'), hrCtrl.addAllowedLocation);
+router.put('/attendance/settings/locations/:id', authenticateToken, requireRole('SUPER_ADMIN'), hrCtrl.updateAllowedLocation);
+router.delete('/attendance/settings/locations/:id', authenticateToken, requireRole('SUPER_ADMIN'), hrCtrl.deleteAllowedLocation);
 
 router.get('/salary', authenticateToken, requirePermission('salary.view'), hrCtrl.getSalaries);
 router.post('/salary', authenticateToken, requirePermission('salary.create'), hrCtrl.generateSalary);
 
 router.get('/performance', authenticateToken, requirePermission('performance.view'), hrCtrl.getPerformanceReviews);
 router.post('/performance', authenticateToken, requirePermission('performance.create'), hrCtrl.createPerformanceReview);
+
+// Leave Requests & HR Approvals
+router.get('/leaves', authenticateToken, hrCtrl.getLeaves);
+router.patch('/leaves/:id/status', authenticateToken, hrCtrl.updateLeaveStatus);
 
 // ==================== MARKETING ====================
 router.get('/campaigns', authenticateToken, requirePermission('campaigns.view'), mktCtrl.getCampaigns);

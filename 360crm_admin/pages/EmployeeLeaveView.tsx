@@ -59,7 +59,7 @@ export const EmployeeLeaveView: React.FC = () => {
         items={[
           { label: 'Available Leave', value: '18 days', detail: 'Annual quota', tone: 'text-blue-600' },
           { label: 'Approved Requests', value: String(data.records.filter(row => row.status === 'APPROVED').length), detail: 'Past approvals', tone: 'text-emerald-600' },
-          { label: 'Pending Requests', value: String(data.records.filter(row => row.status === 'PENDING').length), detail: 'Under HR review', tone: 'text-amber-600' },
+          { label: 'Pending Requests', value: String(data.records.filter(row => row.status === 'PENDING' || row.status === 'Under HR review').length), detail: 'Under HR review', tone: 'text-amber-600' },
           { label: 'Total Submitted', value: String(data.records.length), detail: 'Leave history', tone: 'text-blue-600' }
         ]}
       />
@@ -106,12 +106,18 @@ export const EmployeeLeaveView: React.FC = () => {
                 <div>
                   <p className="text-xs font-bold text-slate-900">{row.name}</p>
                   <p className="mt-0.5 text-[11px] text-slate-500">{row.detail}</p>
-                  <p className="mt-0.5 text-[10px] text-slate-400">{row.date}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400">
+                    {row.date ? new Date(row.date).toLocaleDateString() : 'Today'}
+                  </p>
                 </div>
                 <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                  row.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  row.status === 'APPROVED'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : row.status === 'REJECTED'
+                    ? 'bg-rose-50 text-rose-700'
+                    : 'bg-amber-50 text-amber-700'
                 }`}>
-                  {row.status}
+                  {row.status === 'PENDING' ? 'Under HR review' : row.status}
                 </span>
               </button>
             ))}

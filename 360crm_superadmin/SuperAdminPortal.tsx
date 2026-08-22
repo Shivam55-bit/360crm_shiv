@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
 import { api } from '@/src/services/api';
-import { User, Role, Permission, AuditLog } from '@/src/types';
+import { User, Role, Permission, AuditLog, AttendanceSettingsDoc, OfficeLocation } from '@/src/types';
 import {
   PageHeader,
   StatusBadge,
@@ -36,14 +36,41 @@ import {
   UserPlus,
   ShieldCheck,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  MapPin,
+  Building2,
+  Compass,
+  Clock,
+  Camera,
+  Navigation,
+  Monitor,
+  Cpu,
+  Zap,
+  WifiOff,
+  Timer
 } from 'lucide-react';
 
 export const SuperAdminPortal: React.FC = () => {
   const { user, logout, setActivePortal } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'access' | 'roles' | 'audit' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'access' | 'roles' | 'audit' | 'system' | 'attendance'>('overview');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Attendance Security Settings State
+  const [attSettings, setAttSettings] = useState<AttendanceSettingsDoc | null>(null);
+  const [attLoading, setAttLoading] = useState(false);
+  const [attSaving, setAttSaving] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<OfficeLocation | null>(null);
+  const [locationForm, setLocationForm] = useState({
+    name: '',
+    lat: 28.6139,
+    lng: 77.2090,
+    radiusMeters: 100,
+    address: '',
+    enabled: true
+  });
+  const [detectingGps, setDetectingGps] = useState(false);
 
   // Admins & Users State
   const [usersList, setUsersList] = useState<User[]>([]);
@@ -128,11 +155,114 @@ export const SuperAdminPortal: React.FC = () => {
     }
   };
 
+  // Fetch Attendance Security Settings
+  const fetchAttendanceSettings = async () => {
+    setAttLoading(true);
+    const res = await api.get('/attendance/settings');
+    if (res.success && res.data) {
+      setAttSettings(res.data);
+    }
+    setAttLoading(false);
+  };
+
+  const handleSaveAttendanceToggles = async (updates: Partial<AttendanceSettingsDoc>) => {
+    try {
+      setAttSaving(true);
+      const payload = {
+        ...attSettings,
+        ...updates
+      };
+      const res = await api.put('/attendance/settings', payload);
+      if (res.success && res.data) {
+        setAttSettings(res.data);
+        alert('Attendance Security Policy updated successfully!');
+      } else {
+        alert(res.message || 'Failed to update attendance security settings');
+      }
+    } catch (err: any) {
+      alert('Error updating settings: ' + err.message);
+    } finally {
+      setAttSaving(false);
+    }
+  };
+
+  const handleSaveLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingLocation) {
+        const res = await api.put(`/attendance/settings/locations/${editingLocation.id}`, locationForm);
+        if (res.success && res.data) {
+          setAttSettings(res.data);
+          setIsLocationModalOpen(false);
+          setEditingLocation(null);
+        } else {
+          alert(res.message || 'Failed to update location');
+        }
+      } else {
+        const res = await api.post('/attendance/settings/locations', locationForm);
+        if (res.success && res.data) {
+          setAttSettings(res.data);
+          setIsLocationModalOpen(false);
+        } else {
+          alert(res.message || 'Failed to add location');
+        }
+      }
+    } catch (err: any) {
+      alert('Error saving location: ' + err.message);
+    }
+  };
+
+  const handleDeleteLocation = async (locId: string) => {
+    if (!window.confirm('Are you sure you want to remove this office location?')) return;
+    const res = await api.delete(`/attendance/settings/locations/${locId}`);
+    if (res.success && res.data) {
+      setAttSettings(res.data);
+    } else {
+      alert(res.message || 'Failed to delete location');
+    }
+  };
+
+  const handleToggleLocation = async (loc: OfficeLocation) => {
+    const res = await api.put(`/attendance/settings/locations/${loc.id}`, {
+      ...loc,
+      enabled: !loc.enabled
+    });
+    if (res.success && res.data) {
+      setAttSettings(res.data);
+    }
+  };
+
+  const handleDetectCurrentGps = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setLocationForm(prev => ({
+          ...prev,
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          radiusMeters: prev.radiusMeters || 100
+        }));
+        setDetectingGps(false);
+        alert(`Detected current coordinates: Lat ${pos.coords.latitude.toFixed(6)}, Lng ${pos.coords.longitude.toFixed(6)}`);
+      },
+      err => {
+        setDetectingGps(false);
+        alert('Could not detect GPS: ' + err.message);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
   useEffect(() => {
     fetchStats();
     fetchUsers();
     fetchRolesAndPermissions();
     fetchAuditLogs();
+    fetchAttendanceSettings();
   }, []);
 
   useEffect(() => {
@@ -379,6 +509,17 @@ export const SuperAdminPortal: React.FC = () => {
           >
             <FileText className="w-3.5 h-3.5" />
             Audit Logs
+          </button>
+          <button
+            onClick={() => setActiveTab('attendance')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'attendance'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            Attendance Security
           </button>
           <button
             onClick={() => setActiveTab('system')}
@@ -1192,6 +1333,458 @@ export const SuperAdminPortal: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ============================================================== */}
+        {/* TAB 7: ATTENDANCE SECURITY & GEOFENCING CONFIGURATION */}
+        {/* ============================================================== */}
+        {activeTab === 'attendance' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-blue-400" />
+                  Attendance Security & Geofence Policy
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Control Selfie verification, multi-branch GPS geofencing radius, and employee clock-in compliance.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchAttendanceSettings}
+                  disabled={attLoading}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${attLoading ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingLocation(null);
+                    setLocationForm({
+                      name: '',
+                      lat: 28.6139,
+                      lng: 77.2090,
+                      radiusMeters: 100,
+                      address: '',
+                      enabled: true
+                    });
+                    setIsLocationModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Office Location</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Policy Enforcement Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Card 1: Clock-In Security Policy */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Clock-In Verification</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Selfie & GPS Rules</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Control verification rules required when an employee checks in to start their shift.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">Require Live Selfie</span>
+                    <button
+                      type="button"
+                      disabled={attSaving}
+                      onClick={() => handleSaveAttendanceToggles({
+                        requireSelfieClockIn: !((attSettings?.requireSelfieClockIn ?? attSettings?.requireSelfie) ?? true),
+                        requireSelfie: !((attSettings?.requireSelfieClockIn ?? attSettings?.requireSelfie) ?? true)
+                      })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        (attSettings?.requireSelfieClockIn ?? attSettings?.requireSelfie) ? 'bg-blue-600' : 'bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          (attSettings?.requireSelfieClockIn ?? attSettings?.requireSelfie) ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">Require GPS Location</span>
+                    <button
+                      type="button"
+                      disabled={attSaving}
+                      onClick={() => handleSaveAttendanceToggles({
+                        requireLocationClockIn: !((attSettings?.requireLocationClockIn ?? attSettings?.requireLocation) ?? true),
+                        requireLocation: !((attSettings?.requireLocationClockIn ?? attSettings?.requireLocation) ?? true)
+                      })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        (attSettings?.requireLocationClockIn ?? attSettings?.requireLocation) ? 'bg-emerald-600' : 'bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          (attSettings?.requireLocationClockIn ?? attSettings?.requireLocation) ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Clock-Out Security Policy */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                        <Navigation className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Clock-Out Verification</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">End-of-Shift Policy</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Decide whether employees must submit photo or location proof upon clocking out.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">Require Live Selfie</span>
+                    <button
+                      type="button"
+                      disabled={attSaving}
+                      onClick={() => handleSaveAttendanceToggles({ requireSelfieClockOut: !(attSettings?.requireSelfieClockOut ?? false) })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        attSettings?.requireSelfieClockOut ? 'bg-amber-600' : 'bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          attSettings?.requireSelfieClockOut ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">Require GPS Location</span>
+                    <button
+                      type="button"
+                      disabled={attSaving}
+                      onClick={() => handleSaveAttendanceToggles({ requireLocationClockOut: !(attSettings?.requireLocationClockOut ?? false) })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        attSettings?.requireLocationClockOut ? 'bg-emerald-600' : 'bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          attSettings?.requireLocationClockOut ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: GPS Signal Tolerance & Limits */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                        <Compass className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Signal Accuracy Limit</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">GPS Precision</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      ±{attSettings?.maxGpsAccuracyMeters || 100}m
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Maximum GPS margin of error allowed before rejecting poor signals to prevent spoofing.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {[50, 100, 200].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => handleSaveAttendanceToggles({ maxGpsAccuracyMeters: val })}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold border transition-all cursor-pointer ${
+                          attSettings?.maxGpsAccuracyMeters === val
+                            ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
+                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {val}m
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium">Preset Limits</span>
+                </div>
+              </div>
+
+              {/* Card 4: Desktop Activity Tracking */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                        <Monitor className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Desktop Screen Tracking</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Active Window & Apps</span>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      (attSettings?.desktopTrackingEnabled ?? true)
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {(attSettings?.desktopTrackingEnabled ?? true) ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Enables the lightweight desktop agent to track active application sessions during valid clock-in windows.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300">Desktop Agent Tracking</span>
+                  <button
+                    type="button"
+                    disabled={attSaving}
+                    onClick={() => handleSaveAttendanceToggles({ desktopTrackingEnabled: !(attSettings?.desktopTrackingEnabled ?? true) })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      (attSettings?.desktopTrackingEnabled ?? true) ? 'bg-cyan-600' : 'bg-slate-800'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        (attSettings?.desktopTrackingEnabled ?? true) ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 5: Idle Threshold & Inactivity Detection */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400">
+                        <Timer className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Idle Threshold Limit</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Inactivity Detection</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                      {attSettings?.idleThresholdMinutes || 5} min
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Time without mouse/keyboard input before workstation transitions to IDLE state and pauses active screen time.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {[3, 5, 10].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => handleSaveAttendanceToggles({ idleThresholdMinutes: val })}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold border transition-all cursor-pointer ${
+                          (attSettings?.idleThresholdMinutes || 5) === val
+                            ? 'bg-orange-600 text-white border-orange-500 shadow-xs'
+                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {val}m
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium">Threshold</span>
+                </div>
+              </div>
+
+              {/* Card 6: Offline Tracking & Sync Frequency */}
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                        <WifiOff className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Offline Queue & Sync</h3>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Resilience Engine</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                      {attSettings?.activitySyncIntervalSeconds || 30}s
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Locally queues desktop telemetry during internet disconnection and automatically flushes batches to server.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {[15, 30, 60].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => handleSaveAttendanceToggles({ activitySyncIntervalSeconds: val })}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold border transition-all cursor-pointer ${
+                          (attSettings?.activitySyncIntervalSeconds || 30) === val
+                            ? 'bg-teal-600 text-white border-teal-500 shadow-xs'
+                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {val}s
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium">Sync Interval</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Allowed Office Locations & Multi-Branch Geofences */}
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Allowed Office & Factory Locations (Multi-Branch)</h3>
+                    <p className="text-xs text-slate-400">
+                      Employees can clock in when physically present within the defined radius of any active location below.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold border border-slate-700">
+                  {(attSettings?.allowedLocations || []).filter(l => l.enabled).length} Active Offices
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                    <tr>
+                      <th className="px-6 py-3.5">Office / Plant Name</th>
+                      <th className="px-6 py-3.5">Coordinates (Lat, Lng)</th>
+                      <th className="px-6 py-3.5">Allowed Radius</th>
+                      <th className="px-6 py-3.5">Physical Address / Notes</th>
+                      <th className="px-6 py-3.5">Geofence Status</th>
+                      <th className="px-6 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300 font-medium">
+                    {(attSettings?.allowedLocations || []).map(loc => (
+                      <tr key={loc.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span className="font-bold text-white text-sm">{loc.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-slate-300">
+                          <span className="bg-slate-950 px-2 py-1 rounded-md border border-slate-800">
+                            {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono font-bold text-[11px]">
+                            {loc.radiusMeters} meters
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-400 max-w-xs truncate">
+                          {loc.address || '—'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLocation(loc)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                              loc.enabled
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30'
+                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                            }`}
+                          >
+                            {loc.enabled ? 'ACTIVE ✓' : 'DISABLED ✕'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingLocation(loc);
+                              setLocationForm({
+                                name: loc.name,
+                                lat: loc.lat,
+                                lng: loc.lng,
+                                radiusMeters: loc.radiusMeters,
+                                address: loc.address || '',
+                                enabled: loc.enabled
+                              });
+                              setIsLocationModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title="Edit Location"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteLocation(loc.id)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title="Delete Location"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {(!attSettings?.allowedLocations || attSettings.allowedLocations.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="text-center py-8 text-slate-500">
+                          No office locations configured yet. Click &quot;Add Office Location&quot; to configure geofenced premises.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ============================================================== */}
@@ -1627,6 +2220,131 @@ export const SuperAdminPortal: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ============================================================== */}
+      {/* MODAL 5: ADD / EDIT OFFICE LOCATION (GEOFENCING) */}
+      {/* ============================================================== */}
+      <Modal
+        isOpen={isLocationModalOpen}
+        onClose={() => {
+          setIsLocationModalOpen(false);
+          setEditingLocation(null);
+        }}
+        title={editingLocation ? 'Edit Office Branch Geofence' : 'Add New Office / Factory Location'}
+        subtitle="Define geographic GPS boundaries and allowed clock-in radius for employees"
+      >
+        <form onSubmit={handleSaveLocation} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Office / Branch Name *</label>
+            <input
+              type="text"
+              required
+              value={locationForm.name}
+              onChange={e => setLocationForm({ ...locationForm, name: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white font-medium"
+              placeholder="e.g. Pune Regional Branch / Naroda Factory"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Latitude (Decimal) *</label>
+              <input
+                type="number"
+                step="any"
+                required
+                value={locationForm.lat}
+                onChange={e => setLocationForm({ ...locationForm, lat: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white font-mono"
+                placeholder="28.6139"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Longitude (Decimal) *</label>
+              <input
+                type="number"
+                step="any"
+                required
+                value={locationForm.lng}
+                onChange={e => setLocationForm({ ...locationForm, lng: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white font-mono"
+                placeholder="77.2090"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={detectingGps}
+              onClick={handleDetectCurrentGps}
+              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-bold text-[11px] flex items-center gap-1.5 border border-blue-200 cursor-pointer transition-all"
+            >
+              <Navigation className={`w-3.5 h-3.5 ${detectingGps ? 'animate-spin' : ''}`} />
+              <span>{detectingGps ? 'Detecting GPS...' : 'Use My Current Location Coordinates'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Allowed Radius (Meters) *</label>
+              <input
+                type="number"
+                min="20"
+                max="5000"
+                required
+                value={locationForm.radiusMeters}
+                onChange={e => setLocationForm({ ...locationForm, radiusMeters: parseInt(e.target.value, 10) || 100 })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white font-mono font-bold"
+                placeholder="100"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Recommended: 100m - 250m</p>
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Active Status</label>
+              <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={locationForm.enabled}
+                  onChange={e => setLocationForm({ ...locationForm, enabled: e.target.checked })}
+                  className="rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-semibold text-slate-700">Enable Geofence</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Physical Address / Landmark (Optional)</label>
+            <textarea
+              rows={2}
+              value={locationForm.address}
+              onChange={e => setLocationForm({ ...locationForm, address: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white font-medium"
+              placeholder="e.g. Sector 63 Noida Plant, Gate No. 2"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLocationModalOpen(false);
+                setEditingLocation(null);
+              }}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
+            >
+              {editingLocation ? 'Save Updates' : 'Create Location Geofence'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

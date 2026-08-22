@@ -45,12 +45,15 @@ export interface PermissionDoc {
 
 export interface LeadDoc {
   _id: string;
+  leadCode?: string;
   name: string;
   companyName?: string;
   email: string;
   phone: string;
   source: string; // 'Website' | 'TradeIndia' | 'IndiaMART' | 'WhatsApp' | 'Referral' | 'Google' | 'Manual'
-  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST' | 'CONVERTED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  leadScore?: number;
   stage?: string;
   assignedTo?: string; // User ID or Name
   assignedToId?: string;
@@ -58,6 +61,8 @@ export interface LeadDoc {
   probability?: number;
   city?: string;
   state?: string;
+  convertedCustomerId?: string;
+  convertedQuotationId?: string;
   notes?: string;
   tags?: string[];
   createdAt: string;
@@ -66,12 +71,29 @@ export interface LeadDoc {
 
 export interface CustomerDoc {
   _id: string;
+  customerCode?: string;
   name: string;
   companyName: string;
   email: string;
   phone: string;
   gstNumber?: string;
+  creditLimit?: number;
+  paymentTerms?: string;
   address: {
+    street?: string;
+    city: string;
+    state: string;
+    country: string;
+    pincode?: string;
+  };
+  billingAddress?: {
+    street?: string;
+    city: string;
+    state: string;
+    country: string;
+    pincode?: string;
+  };
+  shippingAddress?: {
     street?: string;
     city: string;
     state: string;
@@ -81,6 +103,7 @@ export interface CustomerDoc {
   assignedTo?: string;
   totalOrdersCount: number;
   totalSpent: number;
+  outstandingBalance?: number;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
@@ -90,7 +113,10 @@ export interface FollowUpDoc {
   _id: string;
   leadId?: string;
   customerId?: string;
+  leadName?: string;
+  customerName?: string;
   type: 'Call' | 'Meeting' | 'WhatsApp' | 'Email' | 'Task' | 'Reminder';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   title: string;
   description?: string;
   scheduledAt: string;
@@ -284,6 +310,7 @@ export interface QuotationItem {
 export interface QuotationDoc {
   _id: string;
   quotationNumber: string;
+  version?: number;
   customerId: string;
   customerName: string;
   date: string;
@@ -292,9 +319,14 @@ export interface QuotationDoc {
   subTotal: number;
   taxAmount: number;
   discountAmount?: number;
+  shipping?: number;
   grandTotal: number;
-  status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'CONVERTED';
+  status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'CONVERTED' | 'APPROVED' | 'EXPIRED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
   convertedSalesOrderId?: string;
+  termsAndConditions?: string;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
@@ -306,6 +338,7 @@ export interface SalesOrderDoc {
   customerId: string;
   customerName: string;
   quotationId?: string;
+  quotationNumber?: string;
   orderDate: string;
   expectedDelivery: string;
   items: QuotationItem[];
@@ -314,9 +347,16 @@ export interface SalesOrderDoc {
   discountAmount?: number;
   shipping?: number;
   grandTotal: number;
-  status: 'PENDING' | 'APPROVED' | 'IN_PROCESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+  stage?: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+  warehouseId?: string;
+  warehouseName?: string;
+  deliveryAddress?: string;
+  trackingNumber?: string;
+  transporterName?: string;
   isInvoiced: boolean;
   invoiceId?: string;
+  invoiceNumber?: string;
   approvedBy?: string;
   notes?: string;
   createdAt: string;
@@ -347,6 +387,7 @@ export interface InvoiceDoc {
   subTotal: number;
   taxAmount: number;
   discountAmount?: number;
+  shipping?: number;
   grandTotal: number;
   paidAmount: number;
   dueAmount: number;
@@ -456,33 +497,156 @@ export interface CallLogDoc {
   createdAt?: string;
 }
 
+export interface AttendanceBreak {
+  _id: string;
+  start: string; // e.g. "01:00:00 PM"
+  end?: string;   // e.g. "01:30:00 PM"
+  durationMinutes?: number;
+  reason?: string;
+}
+
+export interface VerificationStamp {
+  selfieRequired?: boolean;
+  selfieVerified?: boolean;
+  selfieUrl?: string;
+  locationRequired?: boolean;
+  locationVerified?: boolean;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number;
+  officeLocationId?: string;
+  officeLocationName?: string;
+  distanceFromOffice?: number;
+  verifiedAt?: string;
+}
+
 export interface AttendanceDoc {
   _id: string;
   employeeId: string;
   employeeName: string;
+  department?: string;
   date: string; // YYYY-MM-DD
   checkIn?: string;
   checkOut?: string;
-  status: 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE';
+  status: 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE' | 'ON_BREAK' | 'COMPLETED' | 'WORKING' | 'IDLE';
   remarks?: string;
-  selfieCheckIn?: string; // Base64 or Image URL of selfie
+  selfieCheckIn?: string;
   selfieCheckOut?: string;
   locationCheckIn?: {
     lat: number;
     lng: number;
     address?: string;
     accuracy?: number;
+    verifiedDistance?: number;
+    matchedLocationName?: string;
   };
   locationCheckOut?: {
     lat: number;
     lng: number;
     address?: string;
     accuracy?: number;
+    verifiedDistance?: number;
+    matchedLocationName?: string;
   };
-  workHours?: number;
-  breaks?: { start: string; end?: string; durationMinutes?: number }[];
+  clockInVerification?: VerificationStamp;
+  clockOutVerification?: VerificationStamp;
+  breaks?: AttendanceBreak[];
+  workHours?: number; // In hours (e.g. 7.5)
+  totalAttendanceMinutes?: number;
+  totalWorkingMinutes?: number;
+  totalBreakMinutes?: number;
+  totalActiveMinutes?: number;
+  totalIdleMinutes?: number;
+  activeRatio?: number; // e.g. 91.5%
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface OfficeLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radiusMeters: number; // In meters e.g. 100
+  maxAccuracyMeters?: number; // e.g. 50
+  address?: string;
+  enabled: boolean;
+}
+
+export interface AttendanceSettingsDoc {
+  _id: string; // 'attendance_security_config'
+  requireSelfie: boolean;
+  requireLocation: boolean;
+  requireSelfieClockIn: boolean;
+  requireLocationClockIn: boolean;
+  requireSelfieClockOut: boolean;
+  requireLocationClockOut: boolean;
+  desktopTrackingEnabled: boolean;
+  trackActiveApplications: boolean;
+  trackIdleTime: boolean;
+  idleThresholdMinutes: number; // e.g. 5
+  activityDetectionIntervalSeconds: number; // e.g. 5
+  activitySyncIntervalSeconds: number; // e.g. 30
+  allowOfflineTracking: boolean;
+  maxGpsAccuracyMeters: number; // e.g. 100 meters
+  allowedLocations: OfficeLocation[];
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export type ActivityEventType =
+  | 'APPLICATION'
+  | 'ACTIVE'
+  | 'IDLE'
+  | 'BREAK'
+  | 'CLOCK_IN'
+  | 'CLOCK_OUT'
+  | 'SCREEN_ON'
+  | 'SCREEN_OFF'
+  | 'LOCK'
+  | 'UNLOCK'
+  | 'SLEEP'
+  | 'WAKE'
+  | 'AGENT_START'
+  | 'AGENT_STOP';
+
+export interface ActivitySessionDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  attendanceId: string;
+  date: string; // YYYY-MM-DD
+  deviceId?: string;
+  deviceName?: string;
+  type?: ActivityEventType;
+  status?: 'ACTIVE' | 'IDLE' | 'BREAK' | 'COMPLETED' | 'SYSTEM';
+  applicationName: string;
+  windowTitle?: string;
+  category?: 'WORK' | 'COMMUNICATION' | 'BROWSING' | 'MEETING' | 'IDLE' | 'SYSTEM' | 'OTHER';
+  startedAt: string; // ISO string
+  endedAt: string;   // ISO string
+  durationSeconds: number;
+  activeSeconds: number;
+  idleSeconds: number;
+  isIdle: boolean;
+  createdAt: string;
+  syncedAt?: string;
+}
+
+export interface DeviceDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  deviceId: string;
+  deviceName: string;
+  os: string;
+  platform: string;
+  agentVersion: string;
+  status: 'ONLINE' | 'OFFLINE' | 'SYNCING' | 'ERROR';
+  lastSeenAt: string;
+  lastHeartbeatAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SalaryDoc {
@@ -580,10 +744,11 @@ export interface ActivityTimelineDoc {
 
 export interface NotificationDoc {
   _id: string;
-  userId: string;
+  userId?: string;
+  recipientId?: string;
   title: string;
   message: string;
-  type: 'LEAD_ASSIGNED' | 'FOLLOWUP_REMINDER' | 'TASK_ASSIGNED' | 'LEAVE_STATUS' | 'SALARY_PUBLISHED' | 'ADMIN_ALERT';
+  type: 'LEAD_ASSIGNED' | 'FOLLOWUP_REMINDER' | 'TASK_ASSIGNED' | 'LEAVE_STATUS' | 'SALARY_PUBLISHED' | 'ADMIN_ALERT' | string;
   link?: string;
   isRead: boolean;
   createdAt: string;

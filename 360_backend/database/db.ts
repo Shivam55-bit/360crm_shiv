@@ -7,7 +7,8 @@ import {
   InvoiceDoc, PaymentDoc, ExpenseDoc, EmployeeDoc, AttendanceDoc,
   SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc,
   AuditLogDoc, FollowUpDoc, StockTransactionDoc, CreditNoteDoc, CallLogDoc,
-  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
+  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc, AttendanceSettingsDoc,
+  ActivitySessionDoc, DeviceDoc
 } from './types';
 
 export class Collection<T extends { _id: string }> {
@@ -119,6 +120,9 @@ export class Database {
   public messages!: Collection<MessageDoc>;
   public activityTimeline!: Collection<ActivityTimelineDoc>;
   public notifications!: Collection<NotificationDoc>;
+  public attendanceSettings!: Collection<AttendanceSettingsDoc>;
+  public activitySessions!: Collection<ActivitySessionDoc>;
+  public devices!: Collection<DeviceDoc>;
 
   private constructor() {}
 
@@ -165,9 +169,69 @@ export class Database {
     this.messages = new Collection<MessageDoc>('messages', (seed as any).messages || []);
     this.activityTimeline = new Collection<ActivityTimelineDoc>('activityTimeline', (seed as any).activityTimeline || []);
     this.notifications = new Collection<NotificationDoc>('notifications', (seed as any).notifications || []);
+    this.attendanceSettings = new Collection<AttendanceSettingsDoc>('attendanceSettings', (seed as any).attendanceSettings || []);
+    this.activitySessions = new Collection<ActivitySessionDoc>('activitySessions', (seed as any).activitySessions || []);
+    this.devices = new Collection<DeviceDoc>('devices', (seed as any).devices || []);
 
     this.initialized = true;
     console.log('✅ 360CRM Enterprise Database & Memory Engine Initialized with Shiv Shakti Seed Data');
+  }
+
+  public getAttendanceSecurityConfig(): AttendanceSettingsDoc {
+    let settings = this.attendanceSettings?.findById('attendance_security_config');
+    if (!settings) {
+      settings = this.attendanceSettings?.findOne(() => true) || {
+        _id: 'attendance_security_config',
+        requireSelfie: true,
+        requireLocation: true,
+        requireSelfieClockIn: true,
+        requireLocationClockIn: true,
+        requireSelfieClockOut: false,
+        requireLocationClockOut: false,
+        desktopTrackingEnabled: true,
+        trackActiveApplications: true,
+        trackIdleTime: true,
+        idleThresholdMinutes: 5,
+        activityDetectionIntervalSeconds: 5,
+        activitySyncIntervalSeconds: 30,
+        allowOfflineTracking: true,
+        maxGpsAccuracyMeters: 100,
+        allowedLocations: [
+          {
+            id: 'loc_noida_hq',
+            name: 'Noida Corporate Office',
+            lat: 28.6139,
+            lng: 77.2090,
+            radiusMeters: 250,
+            maxAccuracyMeters: 50,
+            address: 'Plot B-14, Sector 63, Noida, Uttar Pradesh 201301',
+            enabled: true
+          },
+          {
+            id: 'loc_delhi_branch',
+            name: 'Delhi Regional Office & Warehouse',
+            lat: 28.5355,
+            lng: 77.3910,
+            radiusMeters: 200,
+            maxAccuracyMeters: 50,
+            address: 'Okhla Industrial Area Phase-2, New Delhi 110020',
+            enabled: true
+          },
+          {
+            id: 'loc_ahmedabad_facility',
+            name: 'Ahmedabad Manufacturing Plant',
+            lat: 23.0225,
+            lng: 72.5714,
+            radiusMeters: 300,
+            maxAccuracyMeters: 50,
+            address: 'GIDC Industrial Estate, Vatva, Ahmedabad, Gujarat 382445',
+            enabled: true
+          }
+        ],
+        updatedAt: new Date().toISOString()
+      };
+    }
+    return settings;
   }
 
   // Atomic Stock In Transaction

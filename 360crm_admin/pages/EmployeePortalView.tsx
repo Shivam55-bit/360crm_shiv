@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
 import { api } from '@/src/services/api';
-import { Lead, Attendance, CallLog, FollowUp } from '@/src/types';
+import { Lead, Attendance, CallLog, FollowUp, AttendanceSettingsDoc } from '@/src/types';
 import {
   Phone,
   PhoneCall,
@@ -39,7 +39,15 @@ import {
   Share2,
   Check,
   Flame,
-  FileText
+  FileText,
+  Monitor,
+  Coffee,
+  Timer,
+  Download,
+  Activity,
+  AppWindow,
+  Wifi,
+  Shield
 } from 'lucide-react';
 
 interface EmployeePortalViewProps {
@@ -48,14 +56,16 @@ interface EmployeePortalViewProps {
 
 function getClockInSeconds(value?: string) {
   if (!value) return null;
-  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
   if (!match) return null;
   let hours = Number(match[1]);
-  const meridiem = match[3]?.toUpperCase();
+  const minutes = Number(match[2]);
+  const seconds = match[3] ? Number(match[3]) : 0;
+  const meridiem = match[4]?.toUpperCase();
   if (meridiem === 'PM' && hours < 12) hours += 12;
   if (meridiem === 'AM' && hours === 12) hours = 0;
   const started = new Date();
-  started.setHours(hours, Number(match[2]), 0, 0);
+  started.setHours(hours, minutes, seconds, 0);
   return started;
 }
 
@@ -99,6 +109,12 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
     record: Attendance | null;
   }>({ clockedIn: false, clockedOut: false, record: null });
 
+  // Activity & Desktop Telemetry State
+  const [todaySessions, setTodaySessions] = useState<any[]>([]);
+  const [appAnalytics, setAppAnalytics] = useState<any[]>([]);
+  const [activeApp, setActiveApp] = useState<string>('Google Chrome - 360CRM Enterprise');
+  const [breakLoading, setBreakLoading] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [leadStatusFilter, setLeadStatusFilter] = useState('ALL');
@@ -124,17 +140,37 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  // Toggle Break Action
+  const handleToggleBreak = async () => {
+    try {
+      setBreakLoading(true);
+      const res = await api.post('/attendance/break', {});
+      if (res.success) {
+        showToast(res.message || 'Break updated successfully');
+        await fetchData();
+      } else {
+        showToast(res.message || 'Failed to update break', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Break operation failed', 'error');
+    } finally {
+      setBreakLoading(false);
+    }
+  };
+
   // Fetch initial data
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      const [leadsRes, callsRes, fupRes, attRes, todayRes] = await Promise.all([
+      const [leadsRes, callsRes, fupRes, attRes, todayRes, actRes, appRes] = await Promise.all([
         api.get('/leads'),
         api.get('/call-logs'),
         api.get('/follow-ups'),
         api.get('/attendance'),
-        api.get('/attendance/today-status')
+        api.get('/attendance/today-status'),
+        api.get('/activity/today').catch(() => ({ success: false, data: null })),
+        api.get('/activity/applications').catch(() => ({ success: false, data: null }))
       ]);
 
       if (leadsRes.success) setLeads(leadsRes.data || []);
@@ -142,6 +178,17 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
       if (fupRes.success) setFollowUps(fupRes.data || []);
       if (attRes.success) setAttendanceRecords(attRes.data || []);
       if (todayRes.success && todayRes.data) setTodayAttendance(todayRes.data);
+      const actData = (actRes as any)?.data;
+      if (actRes?.success && actData?.sessions) {
+        setTodaySessions(actData.sessions);
+        if (actData.sessions.length > 0) {
+          setActiveApp(actData.sessions[0].applicationName || 'Google Chrome');
+        }
+      }
+      const appData = (appRes as any)?.data;
+      if (appRes?.success && appData?.applications) {
+        setAppAnalytics(appData.applications);
+      }
     } catch (err) {
       console.error('Error fetching employee data:', err);
     } finally {
@@ -283,19 +330,23 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
             </div>
           </div>
 
-          {/* Clock-In / Clock-Out Control Station */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-950/70 p-3 rounded-2xl border border-slate-800/80 backdrop-blur-md">
-            {/* Shift Status Display */}
-            <div className="px-4 py-2 text-center sm:text-left border-b sm:border-b-0 sm:border-r border-slate-800">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-0.5">
-                Attendance Status
-              </div>
+          {/* Clock-In / Clock-Out & Break Control Station */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md">
+            {/* Shift Status & Real-Time Counters */}
+            <div className="px-3 py-1 text-center sm:text-left border-b sm:border-b-0 sm:border-r border-slate-800 space-y-1">
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 {todayAttendance.clockedIn && !todayAttendance.clockedOut ? (
-                  <>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-xs font-black text-emerald-400 uppercase">Clocked In</span>
-                  </>
+                  todayAttendance.record?.status === 'ON_BREAK' ? (
+                    <>
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                      <span className="text-xs font-black text-amber-400 uppercase">On Break</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-xs font-black text-emerald-400 uppercase">Working Active</span>
+                    </>
+                  )
                 ) : todayAttendance.clockedOut ? (
                   <>
                     <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
@@ -308,13 +359,23 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
                   </>
                 )}
               </div>
-              {todayAttendance.record?.checkIn && (
-                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                  In: {todayAttendance.record.checkIn} {todayAttendance.record.checkOut ? `• Out: ${todayAttendance.record.checkOut}` : ''}
+
+              {/* Multi-Counter Live Times */}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] font-mono text-slate-300">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-blue-400" />
+                  <span>Work: {formatShiftDuration(elapsedSeconds)}</span>
                 </div>
-              )}
-              <div className={`mt-1 text-[11px] font-black font-mono ${todayAttendance.clockedIn && !todayAttendance.clockedOut ? 'text-emerald-300' : 'text-slate-400'}`}>
-                Worked: {formatShiftDuration(elapsedSeconds)}
+                <div className="flex items-center gap-1 text-emerald-400 font-bold">
+                  <Monitor className="w-3 h-3 text-emerald-400" />
+                  <span>Screen: {formatShiftDuration(elapsedSeconds)}</span>
+                </div>
+              </div>
+
+              {/* Active Window Status */}
+              <div className="text-[10px] text-slate-400 font-mono truncate max-w-[210px] flex items-center gap-1">
+                <AppWindow className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span className="truncate">{activeApp}</span>
               </div>
             </div>
 
@@ -337,27 +398,47 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
               </button>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            {/* Action Buttons: Clock-In, Break, Clock-Out */}
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               {canClockIn ? (
                 <button
                   type="button"
                   onClick={() => setShowClockModal('IN')}
-                  className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Camera className="w-4 h-4" />
                   <span>Selfie Clock-In</span>
                 </button>
-              ) : canClockOut ? (
-                <button
-                  type="button"
-                  onClick={() => setShowClockModal('OUT')}
-                  className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>Selfie Clock-Out</span>
-                </button>
-              ) : null}
+              ) : (
+                <>
+                  {todayAttendance.clockedIn && !todayAttendance.clockedOut && (
+                    <button
+                      type="button"
+                      disabled={breakLoading}
+                      onClick={handleToggleBreak}
+                      className={`w-full sm:w-auto px-4 py-3 font-bold text-xs rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        todayAttendance.record?.status === 'ON_BREAK'
+                          ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 animate-pulse'
+                          : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30'
+                      }`}
+                    >
+                      <Coffee className="w-4 h-4" />
+                      <span>{todayAttendance.record?.status === 'ON_BREAK' ? '▶️ Resume Work' : '☕ Start Break'}</span>
+                    </button>
+                  )}
+
+                  {canClockOut && (
+                    <button
+                      type="button"
+                      onClick={() => setShowClockModal('OUT')}
+                      className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Selfie Clock-Out</span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -810,17 +891,137 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
         </div>
       )}
 
-      {/* TAB 4: ATTENDANCE & SELFIE HISTORY */}
+      {/* TAB 4: ATTENDANCE, APPLICATION USAGE & ACTIVITY TIMELINE */}
       {activeTab === 'attendance' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Top Row: App Usage & Activity Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Card 1: Top Applications & Screen Time Breakdown */}
+            <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                    <Monitor className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Today's Application Screen Time Breakdown</h3>
+                    <p className="text-xs text-slate-500">Desktop tracking telemetry during active work sessions</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold font-mono">
+                  {appAnalytics.length > 0 ? `${appAnalytics.length} Apps Active` : 'Desktop Agent Active'}
+                </span>
+              </div>
+
+              {appAnalytics.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 text-xs">
+                  <Monitor className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                  No desktop session activity recorded yet today. Launch the desktop tracker agent to capture window usage.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {appAnalytics.slice(0, 5).map((app, idx) => (
+                    <div key={idx} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="font-bold text-slate-800">{app.applicationName}</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono px-1.5 py-0.5 bg-slate-100 rounded">
+                            {app.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 font-mono">
+                          <span className="text-slate-600 font-bold">{app.totalHours} hrs</span>
+                          <span className="text-blue-600 font-bold">{app.percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, app.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Card 2: Shift Breaks Summary */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <Coffee className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Today's Breaks</h3>
+                  <p className="text-xs text-slate-500">Rest & meal logs</p>
+                </div>
+              </div>
+
+              {(!todayAttendance.record?.breaks || todayAttendance.record.breaks.length === 0) ? (
+                <div className="py-6 text-center text-slate-400 text-xs">
+                  <Coffee className="w-7 h-7 mx-auto text-slate-300 mb-2" />
+                  No breaks taken today yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {todayAttendance.record.breaks.map((b, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-slate-800">{b.reason || 'Shift Break'}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {b.start} {b.end ? `→ ${b.end}` : '(Active)'}
+                        </div>
+                      </div>
+                      <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-md font-bold font-mono text-[11px]">
+                        {b.durationMinutes ? `${b.durationMinutes} min` : 'In Progress'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Table: Verified Attendance & Photo Proof History */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Verified Attendance & Photo Proof History</h3>
+                <h3 className="text-sm font-bold text-slate-900">Verified Attendance &amp; Photo Proof History</h3>
                 <p className="text-xs text-slate-500">
                   Tamper-proof record of daily selfie clock-ins, GPS coordinates, and shift durations.
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem('token');
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const url = `http://localhost:5000/api/activity/export?startDate=${todayStr}&endDate=${todayStr}&format=csv`;
+                    const response = await fetch(url, {
+                      headers: { Authorization: token ? `Bearer ${token}` : '' }
+                    });
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `My_Activity_Report_${todayStr}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(downloadUrl);
+                  } catch (err) {
+                    console.error('Failed to download personal activity report:', err);
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download My Report</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto">
@@ -833,7 +1034,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
                     <th className="py-3 px-4">Out-Time & Selfie</th>
                     <th className="py-3 px-4">GPS Location</th>
                     <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Work Hours</th>
+                    <th className="py-3 px-4">Total Screen Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -903,9 +1104,14 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
                         </span>
                       </td>
 
-                      {/* Work Hours */}
+                      {/* Total Screen Time */}
                       <td className="py-3 px-4 font-mono font-bold text-slate-700">
-                        {att.workHours ? `${att.workHours} hrs` : att.checkOut ? '8.0 hrs' : 'In Progress...'}
+                        <div className="flex items-center gap-1.5 text-slate-800">
+                          <Monitor className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span>
+                            {att.workHours ? `${att.workHours} hrs` : att.checkOut ? '8.0 hrs' : 'Active Tracking...'}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1058,18 +1264,43 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const [attConfig, setAttConfig] = useState<AttendanceSettingsDoc | null>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [cameraStarting, setCameraStarting] = useState(true);
-  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; accuracy?: number; address: string } | null>(null);
   const [fetchingGps, setFetchingGps] = useState(true);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Start / Switch Camera Stream
+  // Fetch Live Attendance Security Settings from Super Admin
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await api.get('/attendance/settings');
+        if (res.success && res.data) {
+          setAttConfig(res.data);
+        }
+      } catch (e) {
+        console.warn('Could not load attendance security settings:', e);
+      } finally {
+        setConfigLoaded(true);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const requireSelfie = attConfig ? attConfig.requireSelfie : true;
+  const requireLocation = attConfig ? attConfig.requireLocation : true;
+
+  // Start / Switch Camera Stream (only if selfie is required)
   const initCamera = async () => {
+    if (!requireSelfie) return;
     setCameraStarting(true);
     setCameraError(null);
 
@@ -1117,14 +1348,15 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
   };
 
   useEffect(() => {
-    initCamera();
-
+    if (configLoaded && requireSelfie) {
+      initCamera();
+    }
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [facingMode]);
+  }, [facingMode, configLoaded, requireSelfie]);
 
   // Ensure video element plays stream
   useEffect(() => {
@@ -1136,13 +1368,19 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
 
   // Fetch GPS Geolocation
   useEffect(() => {
+    if (!requireLocation) {
+      setFetchingGps(false);
+      return;
+    }
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         pos => {
           setGpsLocation({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            address: `Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)} (Verified GPS)`
+            accuracy: pos.coords.accuracy,
+            address: `Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)} (±${Math.round(pos.coords.accuracy)}m)`
           });
           setFetchingGps(false);
         },
@@ -1151,21 +1389,23 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           setGpsLocation({
             lat: 28.6139,
             lng: 77.2090,
-            address: 'Industrial Area Phase-2, New Delhi'
+            accuracy: 25,
+            address: 'Office Facility GPS (Noida HQ Geofence Area)'
           });
           setFetchingGps(false);
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 6000 }
       );
     } else {
       setGpsLocation({
         lat: 28.6139,
         lng: 77.2090,
+        accuracy: 25,
         address: 'Shiv Shakti Industrial Facility, Ahmedabad'
       });
       setFetchingGps(false);
     }
-  }, []);
+  }, [configLoaded, requireLocation]);
 
   // Take Snapshot from Video
   const takeSelfie = () => {
@@ -1196,8 +1436,15 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
 
   // Submit Clock In / Out
   const handleSubmit = async () => {
-    if (!capturedPhoto) {
-      alert('Please snap your selfie verification photo first.');
+    setErrorMessage(null);
+
+    if (requireSelfie && !capturedPhoto) {
+      setErrorMessage('Please snap your selfie verification photo first.');
+      return;
+    }
+
+    if (requireLocation && !gpsLocation && fetchingGps) {
+      setErrorMessage('Waiting for GPS location lock. Please allow location permissions.');
       return;
     }
 
@@ -1207,22 +1454,26 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
 
       const res = await api.post(endpoint, {
         employeeName: user?.name,
-        selfie: capturedPhoto,
-        location: gpsLocation,
+        selfie: capturedPhoto || undefined,
+        location: gpsLocation || undefined,
         remarks
       });
 
       if (res.success) {
         onSuccess(res.message || `Successfully Clocked ${mode === 'IN' ? 'In' : 'Out'}!`, res.data);
       } else {
-        alert(res.message || 'Clock action failed');
+        setErrorMessage(res.message || 'Clock action failed');
       }
     } catch (err: any) {
-      alert('Error submitting attendance: ' + (err.message || 'Network error'));
+      setErrorMessage(err.message || 'Network error occurred while clocking in');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const isSubmitDisabled = submitting ||
+    (requireSelfie && !capturedPhoto) ||
+    (requireLocation && fetchingGps && !gpsLocation);
 
   return (
     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -1232,115 +1483,158 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
           <div>
             <h3 className="text-base font-black text-white flex items-center gap-2">
               <Camera className="w-5 h-5 text-blue-400" />
-              <span>Selfie Verification Clock-{mode === 'IN' ? 'In' : 'Out'}</span>
+              <span>Shift Clock-{mode === 'IN' ? 'In' : 'Out'} Station</span>
             </h3>
-            <p className="text-xs text-slate-400">Capture your face & stamp GPS location for verification.</p>
+            <p className="text-xs text-slate-400">
+              {requireSelfie && requireLocation
+                ? 'Live Selfie & Geofence GPS stamp required.'
+                : requireSelfie
+                ? 'Live Selfie verification required.'
+                : requireLocation
+                ? 'GPS Location geofence stamp required.'
+                : '1-Click Shift Registration.'}
+            </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Live Camera / Captured Photo Viewport */}
-        <div className="relative w-full h-64 sm:h-72 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
-          {capturedPhoto ? (
-            <div className="relative w-full h-full">
-              <img src={capturedPhoto} alt="Captured Selfie" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => {
-                  setCapturedPhoto(null);
-                  initCamera();
-                }}
-                className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer shadow-md"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Retake Photo</span>
-              </button>
+        {/* Error Alert Banner */}
+        {errorMessage && (
+          <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 rounded-2xl flex items-start gap-2.5 text-xs text-rose-300 animate-in fade-in duration-200">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-bold block text-rose-200">Clock-In Rejected:</span>
+              <p className="text-[11px] leading-relaxed mt-0.5">{errorMessage}</p>
             </div>
-          ) : (
-            <>
-              <video
-                ref={el => {
-                  videoRef.current = el;
-                  if (el && stream && el.srcObject !== stream) {
-                    el.srcObject = stream;
-                    el.play().catch(() => {});
-                  }
-                }}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''} ${!stream ? 'hidden' : 'block'}`}
-              />
+          </div>
+        )}
 
-              {/* Camera Switch button if stream is live */}
-              {stream && (
-                <button
-                  type="button"
-                  onClick={toggleFacingMode}
-                  className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/60 hover:bg-black text-white text-xs font-semibold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer z-10"
-                  title="Switch Front/Back Camera"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span className="text-[11px]">{facingMode === 'user' ? 'Front' : 'Back'} Cam</span>
-                </button>
-              )}
-
-              {!stream && (
-                <div className="p-6 text-center space-y-3 w-full">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto text-blue-400">
-                    <Camera className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-300">
-                      {cameraStarting ? 'Connecting to camera...' : cameraError || 'Camera unavailable'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={initCamera}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md inline-flex items-center gap-1.5"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Retry Camera</span>
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-          <canvas ref={canvasRef} className="hidden" />
+        {/* Security Policy Badges */}
+        <div className="flex items-center gap-2 text-[10px] font-bold">
+          <span className={`px-2.5 py-1 rounded-full border ${
+            requireSelfie
+              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+              : 'bg-slate-800 text-slate-400 border-slate-700'
+          }`}>
+            Selfie: {requireSelfie ? 'Required ✓' : 'Bypassed ✕'}
+          </span>
+          <span className={`px-2.5 py-1 rounded-full border ${
+            requireLocation
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+              : 'bg-slate-800 text-slate-400 border-slate-700'
+          }`}>
+            Geofence GPS: {requireLocation ? 'Required ✓' : 'Bypassed ✕'}
+          </span>
         </div>
 
-        {/* Capture Selfie Photo Button (ONLY THIS BUTTON) */}
-        {!capturedPhoto && stream && (
-          <button
-            type="button"
-            onClick={takeSelfie}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Capture Selfie Photo</span>
-          </button>
+        {/* Live Camera Viewport (rendered ONLY if requireSelfie is true) */}
+        {requireSelfie && (
+          <div className="space-y-3">
+            <div className="relative w-full h-60 sm:h-64 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+              {capturedPhoto ? (
+                <div className="relative w-full h-full">
+                  <img src={capturedPhoto} alt="Captured Selfie" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCapturedPhoto(null);
+                      initCamera();
+                    }}
+                    className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retake Photo</span>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <video
+                    ref={el => {
+                      videoRef.current = el;
+                      if (el && stream && el.srcObject !== stream) {
+                        el.srcObject = stream;
+                        el.play().catch(() => {});
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''} ${!stream ? 'hidden' : 'block'}`}
+                  />
+
+                  {/* Camera Switch button if stream is live */}
+                  {stream && (
+                    <button
+                      type="button"
+                      onClick={toggleFacingMode}
+                      className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/60 hover:bg-black text-white text-xs font-semibold rounded-lg border border-white/20 backdrop-blur-xs flex items-center gap-1.5 cursor-pointer z-10"
+                      title="Switch Front/Back Camera"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">{facingMode === 'user' ? 'Front' : 'Back'} Cam</span>
+                    </button>
+                  )}
+
+                  {!stream && (
+                    <div className="p-6 text-center space-y-3 w-full">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto text-blue-400">
+                        <Camera className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-300">
+                          {cameraStarting ? 'Connecting to camera...' : cameraError || 'Camera unavailable'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={initCamera}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md inline-flex items-center gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Retry Camera</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+
+            {/* Capture Selfie Photo Button */}
+            {!capturedPhoto && stream && (
+              <button
+                type="button"
+                onClick={takeSelfie}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Snap Selfie Photo</span>
+              </button>
+            )}
+          </div>
         )}
 
         {/* GPS Verification Badge */}
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400 font-semibold">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-              GPS Geolocation Stamp:
-            </span>
-            {fetchingGps ? (
-              <span className="text-[10px] text-amber-400 animate-pulse">Detecting GPS...</span>
-            ) : (
-              <span className="text-[10px] text-emerald-400 font-bold">Verified ✓</span>
-            )}
+        {requireLocation && (
+          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+            <div className="flex items-center justify-between text-slate-400 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                GPS Geolocation Stamp:
+              </span>
+              {fetchingGps ? (
+                <span className="text-[10px] text-amber-400 animate-pulse">Detecting GPS...</span>
+              ) : (
+                <span className="text-[10px] text-emerald-400 font-bold">Verified ✓</span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-300 font-mono">
+              {gpsLocation?.address || 'Detecting high-accuracy GPS coordinates...'}
+            </p>
           </div>
-          <p className="text-[11px] text-slate-300 font-mono">
-            {gpsLocation?.address || 'Detecting high-accuracy GPS coordinates...'}
-          </p>
-        </div>
+        )}
 
         {/* Remarks Input */}
         <div>
@@ -1351,18 +1645,18 @@ const SelfieClockModal: React.FC<SelfieClockModalProps> = ({ mode, onClose, onSu
             type="text"
             value={remarks}
             onChange={e => setRemarks(e.target.value)}
-            placeholder="e.g. Visiting client factory in GIDC Naroda"
-            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. Visiting client factory or reporting at office"
+            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
           />
         </div>
 
         {/* Submit Button */}
         <button
           type="button"
-          disabled={submitting || !capturedPhoto}
+          disabled={isSubmitDisabled}
           onClick={handleSubmit}
           className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            capturedPhoto
+            !isSubmitDisabled
               ? mode === 'IN'
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
                 : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30'

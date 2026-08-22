@@ -71,12 +71,20 @@ export async function getLeadSources(req: AuthenticatedRequest, res: Response) {
 // ==================== WEBHOOK INGESTION (TRADEINDIA, WEBSITE, WHATSAPP) ====================
 export async function receiveTradeIndiaLead(req: Request, res: Response) {
   try {
-    const { sender_name, sender_mobile, sender_email, sender_company, query_product_name, query_message, sender_city, sender_state } = req.body;
+    const body = req.body || {};
+    const sender_name = body.sender_name || body.SENDER_NAME;
+    const sender_mobile = body.sender_mobile || body.SENDER_MOBILE;
+    const sender_email = body.sender_email || body.SENDER_EMAIL;
+    const sender_company = body.sender_company || body.SENDER_COMPANY || '';
+    const query_product_name = body.query_product_name || body.PRODUCT_NAME;
+    const query_message = body.query_message || body.QUERY_MESSAGE;
+    const sender_city = body.sender_city || body.SENDER_CITY || 'Varanasi';
+    const sender_state = body.sender_state || body.SENDER_STATE || 'Uttar Pradesh';
 
     const leadName = sender_name || 'TradeIndia Inquiry';
     const phone = sender_mobile || '+91 98000 00000';
     const email = sender_email || 'inquiry@tradeindia.buyer';
-    const company = sender_company || '';
+    const company = sender_company;
     const requirement = query_product_name || query_message || 'B2B Raw Material Sourcing';
 
     // Auto-assign to available sales rep
@@ -180,7 +188,11 @@ export async function receiveWebsiteLead(req: Request, res: Response) {
 
 export async function sendWhatsAppMessage(req: AuthenticatedRequest, res: Response) {
   try {
-    const { phone, template, customerName, parameters } = req.body;
+    const { phone: reqPhone, template: reqTemplate, customerName: reqCustomerName, parameters, toPhone, templateName, recipientName, messageText } = req.body;
+
+    const phone = reqPhone || toPhone;
+    const template = reqTemplate || templateName || 'General';
+    const customerName = reqCustomerName || recipientName || 'Client';
 
     if (!phone) {
       return res.status(400).json({ success: false, message: 'Recipient phone number is required.' });
@@ -188,9 +200,9 @@ export async function sendWhatsAppMessage(req: AuthenticatedRequest, res: Respon
 
     const msg = db.messages.insertOne({
       recipientPhone: phone,
-      recipientName: customerName || 'Client',
+      recipientName: customerName,
       channel: 'WHATSAPP',
-      content: `Template: ${template || 'General Notification'} | Params: ${JSON.stringify(parameters || {})}`,
+      content: messageText || `Template: ${template} | Params: ${JSON.stringify(parameters || {})}`,
       status: 'DELIVERED',
       sentBy: req.user?.name || 'System Dispatcher',
       sentAt: new Date().toISOString(),

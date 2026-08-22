@@ -1,6 +1,9 @@
 node_modules/
 dist/
 360_backend/dist/
+360_backend/node_modules/
+desktop_tracker/node_modules/
+desktop_tracker/offline_queue.json
 .env
 .env.*
 !.env.example

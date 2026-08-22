@@ -32,7 +32,12 @@ export async function getProducts(req: AuthenticatedRequest, res: Response) {
 
 export async function createProduct(req: AuthenticatedRequest, res: Response) {
   try {
-    const { name, sku, category, categoryId, unit, purchasePrice, sellingPrice, taxRate, minStockLevel, initialStock, warehouseId, description } = req.body;
+    const body = req.body || {};
+    const { name, sku, category, categoryId, unit, purchasePrice, sellingPrice, warehouseId, description } = body;
+    
+    const taxRate = body.taxRate !== undefined ? body.taxRate : body.taxPercent;
+    const minStockLevel = body.minStockLevel !== undefined ? body.minStockLevel : body.minStock;
+    const initialStock = body.initialStock !== undefined ? body.initialStock : body.currentStock;
 
     if (!name || !sku || purchasePrice === undefined || sellingPrice === undefined) {
       return res.status(400).json({ success: false, message: 'Name, SKU, purchase price, and selling price are required.' });
@@ -53,7 +58,9 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
       purchasePrice: Number(purchasePrice),
       sellingPrice: Number(sellingPrice),
       taxRate: Number(taxRate) || 18,
+      taxPercent: Number(taxRate) || 18,
       minStockLevel: Number(minStockLevel) || 10,
+      minStock: Number(minStockLevel) || 10,
       currentStock,
       description: description || '',
       status: 'ACTIVE',

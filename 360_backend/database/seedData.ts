@@ -5,7 +5,8 @@ import {
   InvoiceDoc, PaymentDoc, ExpenseDoc, EmployeeDoc, AttendanceDoc,
   SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc,
   AuditLogDoc, FollowUpDoc, StockTransactionDoc, CreditNoteDoc, CallLogDoc,
-  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
+  LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc, AttendanceSettingsDoc,
+  ActivitySessionDoc, DeviceDoc
 } from './types';
 import { ALL_PERMISSIONS } from './permissionsList';
 
@@ -1275,7 +1276,7 @@ export async function getSeedData() {
       checkOut: '',
       status: 'PRESENT',
       workHours: 4.5,
-      breaks: [{ start: '01:00 PM', end: '01:30 PM', durationMinutes: 30 }],
+      breaks: [{ _id: 'brk_arjun_1', start: '01:00 PM', end: '01:30 PM', durationMinutes: 30 }],
       remarks: 'Biometric selfie verified at Ahmedabad West Office',
       createdAt: new Date().toISOString()
     }
@@ -1772,6 +1773,99 @@ export async function getSeedData() {
     }
   ];
 
+  const activitySessions: ActivitySessionDoc[] = [
+    {
+      _id: 'act_sess_1',
+      employeeId: 'emp_arjun',
+      employeeName: 'Arjun Singh',
+      attendanceId: 'att_arjun_today',
+      date: new Date().toISOString().split('T')[0],
+      deviceId: 'dev_arjun_win11',
+      deviceName: 'DESKTOP-ARJUN-W11',
+      applicationName: 'Google Chrome',
+      windowTitle: '360CRM - Enterprise Workspace & Calling Hub',
+      category: 'WORK',
+      startedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+      endedAt: new Date(Date.now() - 2.5 * 3600 * 1000).toISOString(),
+      durationSeconds: 5400,
+      activeSeconds: 4800,
+      idleSeconds: 600,
+      isIdle: false,
+      createdAt: new Date().toISOString()
+    },
+    {
+      _id: 'act_sess_2',
+      employeeId: 'emp_arjun',
+      employeeName: 'Arjun Singh',
+      attendanceId: 'att_arjun_today',
+      date: new Date().toISOString().split('T')[0],
+      deviceId: 'dev_arjun_win11',
+      deviceName: 'DESKTOP-ARJUN-W11',
+      applicationName: 'Visual Studio Code',
+      windowTitle: '360project - Client CRM Integration',
+      category: 'WORK',
+      startedAt: new Date(Date.now() - 2.5 * 3600 * 1000).toISOString(),
+      endedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
+      durationSeconds: 5400,
+      activeSeconds: 5100,
+      idleSeconds: 300,
+      isIdle: false,
+      createdAt: new Date().toISOString()
+    },
+    {
+      _id: 'act_sess_3',
+      employeeId: 'emp_arjun',
+      employeeName: 'Arjun Singh',
+      attendanceId: 'att_arjun_today',
+      date: new Date().toISOString().split('T')[0],
+      deviceId: 'dev_arjun_win11',
+      deviceName: 'DESKTOP-ARJUN-W11',
+      applicationName: 'Microsoft Excel',
+      windowTitle: 'Q3_Sales_Invoices_Pipeline.xlsx',
+      category: 'WORK',
+      startedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
+      endedAt: new Date().toISOString(),
+      durationSeconds: 3600,
+      activeSeconds: 3200,
+      idleSeconds: 400,
+      isIdle: false,
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const devices: DeviceDoc[] = [
+    {
+      _id: 'dev_1',
+      employeeId: 'emp_arjun',
+      employeeName: 'Arjun Singh',
+      deviceId: 'dev_arjun_win11',
+      deviceName: 'DESKTOP-ARJUN-W11',
+      os: 'Windows 11 Pro 64-bit',
+      platform: 'win32',
+      agentVersion: '1.0.0',
+      status: 'ONLINE',
+      lastSeenAt: new Date().toISOString(),
+      lastHeartbeatAt: new Date().toISOString(),
+      createdAt: '2026-01-10T08:00:00.000Z',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      _id: 'dev_2',
+      employeeId: 'emp_1',
+      employeeName: 'Vikram Mehta',
+      deviceId: 'dev_vikram_dell',
+      deviceName: 'LAPTOP-VIKRAM-DELL',
+      os: 'Windows 10 Enterprise',
+      platform: 'win32',
+      agentVersion: '1.0.0',
+      status: 'ONLINE',
+      lastSeenAt: new Date().toISOString(),
+      lastHeartbeatAt: new Date().toISOString(),
+      createdAt: '2026-01-15T09:00:00.000Z',
+      updatedAt: new Date().toISOString()
+    }
+  ];
+
   return {
     roles,
     users,
@@ -1793,6 +1887,8 @@ export async function getSeedData() {
     creditNotes,
     employees,
     attendance,
+    activitySessions,
+    devices,
     salaries,
     performance,
     campaigns,
@@ -1804,7 +1900,59 @@ export async function getSeedData() {
     tasks,
     messages,
     activityTimeline,
-    notifications
+    notifications,
+    attendanceSettings: [
+      {
+        _id: 'attendance_security_config',
+        requireSelfie: true,
+        requireLocation: true,
+        requireSelfieClockIn: true,
+        requireLocationClockIn: true,
+        requireSelfieClockOut: false,
+        requireLocationClockOut: false,
+        desktopTrackingEnabled: true,
+        trackActiveApplications: true,
+        trackIdleTime: true,
+        idleThresholdMinutes: 5,
+        activityDetectionIntervalSeconds: 5,
+        activitySyncIntervalSeconds: 30,
+        allowOfflineTracking: true,
+        maxGpsAccuracyMeters: 100,
+        allowedLocations: [
+          {
+            id: 'loc_noida_hq',
+            name: 'Noida Corporate Office',
+            lat: 28.6139,
+            lng: 77.2090,
+            radiusMeters: 250,
+            maxAccuracyMeters: 50,
+            address: 'Plot B-14, Sector 63, Noida, Uttar Pradesh 201301',
+            enabled: true
+          },
+          {
+            id: 'loc_delhi_branch',
+            name: 'Delhi Regional Office & Warehouse',
+            lat: 28.5355,
+            lng: 77.3910,
+            radiusMeters: 200,
+            maxAccuracyMeters: 50,
+            address: 'Okhla Industrial Area Phase-2, New Delhi 110020',
+            enabled: true
+          },
+          {
+            id: 'loc_ahmedabad_facility',
+            name: 'Ahmedabad Manufacturing Plant',
+            lat: 23.0225,
+            lng: 72.5714,
+            radiusMeters: 300,
+            maxAccuracyMeters: 50,
+            address: 'GIDC Industrial Estate, Vatva, Ahmedabad, Gujarat 382445',
+            enabled: true
+          }
+        ],
+        updatedAt: '2026-01-01T00:00:00.000Z'
+      }
+    ] as AttendanceSettingsDoc[]
   };
 }
 

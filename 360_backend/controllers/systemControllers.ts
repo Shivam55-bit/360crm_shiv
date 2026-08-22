@@ -11,15 +11,37 @@ export async function getDashboardStats(req: AuthenticatedRequest, res: Response
     const totalInvoices = db.invoices.countDocuments();
     const totalProducts = db.products.countDocuments();
 
-    // Additional financials
-    const invoices = db.invoices.getAll();
-    const purchases = db.purchases.getAll();
-    const products = db.products.getAll();
+    // Additional financials calculated dynamically from database
+    const invoices = db.invoices.getAll() || [];
+    const purchases = db.purchases.getAll() || [];
+    const products = db.products.getAll() || [];
 
-    const totalSales = invoices.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
-    const totalPurchases = purchases.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
-    const stockValue = products.reduce((acc, curr) => acc + (curr.currentStock * curr.purchasePrice), 0);
-    const pendingPayments = invoices.filter(i => i.dueAmount > 0).reduce((acc, curr) => acc + curr.dueAmount, 0);
+    // 1. TOTAL SALES INVOICED: Sum of grandTotal for valid/active invoices
+    const validInvoices = invoices.filter(i => i && i.status !== 'CANCELLED');
+    const totalSales = validInvoices.reduce((acc, curr) => acc + (Number(curr.grandTotal) || 0), 0);
+
+    // 2. STOCK VALUATION: Sum of (currentStock * purchasePrice) for valid products
+    const validProducts = products.filter(p => p && p.status !== 'INACTIVE');
+    const stockValue = validProducts.reduce((acc, curr) => {
+      const stock = Number(curr.currentStock) || 0;
+      const price = Number(curr.purchasePrice) || 0;
+      return acc + (stock * price);
+    }, 0);
+
+    // 3. PURCHASE ORDERS: Sum of grandTotal for valid purchase order records
+    const validPurchases = purchases.filter(p => p && p.status !== 'CANCELLED');
+    const totalPurchases = validPurchases.reduce((acc, curr) => acc + (Number(curr.grandTotal) || 0), 0);
+
+    // 4. PENDING RECEIVABLES: Total Invoice Amount - Total Amount Received (for unpaid/partially paid valid invoices)
+    const pendingPayments = validInvoices.reduce((acc, curr) => {
+      const grandTotal = Number(curr.grandTotal) || 0;
+      const paidAmount = Number(curr.paidAmount) || 0;
+      const due = curr.dueAmount !== undefined ? Number(curr.dueAmount) : Math.max(0, grandTotal - paidAmount);
+      if (due > 0 && curr.paymentStatus !== 'PAID') {
+        return acc + due;
+      }
+      return acc;
+    }, 0);
 
     const totalEmployees = db.employees.countDocuments();
     const activeCampaigns = db.campaigns.countDocuments(c => c.status === 'ACTIVE');

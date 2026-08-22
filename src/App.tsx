@@ -11,10 +11,12 @@ import {
   CustomersView,
   QuotationsView,
   SalesOrdersView,
-  FollowUpsView
+  FollowUpsView,
+  SalesReportsView
 } from './../360crm_admin/pages/SalesViews';
 import {
   ProductsView,
+  CategoriesView,
   InventoryView,
   StockInView,
   StockOutView,
@@ -24,13 +26,17 @@ import {
 import {
   InvoicesView,
   PaymentsView,
-  ReceivablesView
+  ReceivablesView,
+  PayablesView,
+  ExpensesView,
+  CreditNotesView
 } from './../360crm_admin/pages/AccountsViews';
 import {
   EmployeesView,
   AttendanceView,
   SalaryView,
-  PerformanceView
+  PerformanceView,
+  LeaveRequestsView
 } from './../360crm_admin/pages/PeopleViews';
 import {
   CampaignsView,
@@ -140,7 +146,7 @@ export const AppContent: React.FC = () => {
       case 'follow_ups':
         return <FollowUpsView />;
       case 'sales_reports':
-        return <ReportsHubView />;
+        return <SalesReportsView />;
 
       // Marketing Views
       case 'marketing_dashboard':
@@ -157,8 +163,9 @@ export const AppContent: React.FC = () => {
 
       // Inventory Views
       case 'products':
-      case 'categories':
         return <ProductsView />;
+      case 'categories':
+        return <CategoriesView />;
       case 'inventory':
       case 'warehouses':
         return <InventoryView />;
@@ -173,20 +180,25 @@ export const AppContent: React.FC = () => {
 
       // Accounts Views
       case 'invoices':
-      case 'expenses':
-      case 'credit_notes':
         return <InvoicesView />;
+      case 'expenses':
+        return <ExpensesView />;
+      case 'credit_notes':
+        return <CreditNotesView />;
       case 'payments':
         return <PaymentsView />;
       case 'receivables':
-      case 'payables':
         return <ReceivablesView />;
+      case 'payables':
+        return <PayablesView />;
       case 'accounts_reports':
         return <ReportsHubView />;
 
       // People / HR Views
       case 'employees':
         return <EmployeesView />;
+      case 'leave_requests':
+        return <LeaveRequestsView />;
       case 'attendance':
         return <AttendanceView />;
       case 'performance':

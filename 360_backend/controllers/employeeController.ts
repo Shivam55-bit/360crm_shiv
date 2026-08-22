@@ -8,6 +8,12 @@ import {
   QuotationDoc, SalesOrderDoc, AttendanceDoc, SalaryDoc,
   LeaveDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
 } from '../database/types';
+import {
+  validateAttendanceSecurity,
+  clockIn as hrClockIn,
+  clockOut as hrClockOut,
+  toggleBreak as hrToggleBreak
+} from './peopleControllers';
 
 function parseAttendanceTime(value?: string) {
   if (!value) return null;
@@ -151,170 +157,15 @@ export async function getEmployeeAttendance(req: AuthenticatedRequest, res: Resp
 }
 
 export async function clockIn(req: AuthenticatedRequest, res: Response) {
-  try {
-    const { userId, userName, employeeId, employeeName } = getEmpContext(req);
-    const { selfie, location, remarks, ipAddress, deviceInfo } = req.body;
-    if (typeof selfie !== 'string' || !selfie.startsWith('data:image/')) {
-      return res.status(400).json({ success: false, message: 'A selfie is required to clock in.' });
-    }
-    const today = new Date().toISOString().split('T')[0];
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    let existing = db.attendance.findOne(a =>
-      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
-      a.date === today
-    );
-
-    if (existing && existing.checkIn) {
-      return res.status(400).json({
-        success: false,
-        message: `Already clocked in today at ${existing.checkIn}. Cannot clock in twice for the same active session.`
-      });
-    }
-
-    let record: AttendanceDoc;
-    if (existing) {
-      record = db.attendance.updateById(existing._id, {
-        checkIn: nowTime,
-        status: 'PRESENT',
-        selfieCheckIn: selfie || existing.selfieCheckIn,
-        locationCheckIn: location || existing.locationCheckIn,
-        remarks: remarks || 'Selfie Clock-in verified',
-        updatedAt: new Date().toISOString()
-      })!;
-    } else {
-      record = db.attendance.insertOne({
-        employeeId,
-        employeeName,
-        date: today,
-        checkIn: nowTime,
-        status: 'PRESENT',
-        selfieCheckIn: selfie || '',
-        locationCheckIn: location || undefined,
-        remarks: remarks || 'Clocked in via Employee Portal',
-        workHours: 0,
-        breaks: [],
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    recordAuditLog(req, 'CREATE', 'attendance', 'Employee Clock In', record._id, undefined, {
-      checkIn: nowTime,
-      hasSelfie: !!selfie,
-      hasLocation: !!location
-    });
-
-    return res.json({
-      success: true,
-      message: `✅ Shift Started! Biometric Clock-In confirmed at ${nowTime}`,
-      data: record
-    });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  return hrClockIn(req, res);
 }
 
 export async function clockOut(req: AuthenticatedRequest, res: Response) {
-  try {
-    const { userId, userName, employeeId } = getEmpContext(req);
-    const { selfie, location, remarks } = req.body;
-    if (typeof selfie !== 'string' || !selfie.startsWith('data:image/')) {
-      return res.status(400).json({ success: false, message: 'A selfie is required to clock out.' });
-    }
-    const today = new Date().toISOString().split('T')[0];
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    let existing = db.attendance.findOne(a =>
-      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
-      a.date === today
-    );
-
-    if (!existing || !existing.checkIn) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot clock out before clocking in first.'
-      });
-    }
-
-    if (existing.checkOut) {
-      return res.status(400).json({
-        success: false,
-        message: `Already clocked out today at ${existing.checkOut}.`
-      });
-    }
-
-    const calculatedHours = calculateWorkHours(existing.checkIn, nowTime);
-
-    const updated = db.attendance.updateById(existing._id, {
-      checkOut: nowTime,
-      selfieCheckOut: selfie || '',
-      locationCheckOut: location || undefined,
-      workHours: calculatedHours,
-      remarks: remarks || existing.remarks || 'Clocked out with selfie verification',
-      updatedAt: new Date().toISOString()
-    })!;
-
-    recordAuditLog(req, 'UPDATE', 'attendance', 'Employee Clock Out', updated._id, undefined, {
-      checkOut: nowTime,
-      hasSelfie: !!selfie
-    });
-
-    return res.json({
-      success: true,
-      message: `👋 Great work today! Clock-Out recorded at ${nowTime}`,
-      data: updated
-    });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  return hrClockOut(req, res);
 }
 
 export async function toggleBreak(req: AuthenticatedRequest, res: Response) {
-  try {
-    const { userId, userName, employeeId } = getEmpContext(req);
-    const { action } = req.body; // 'START' | 'END'
-    const today = new Date().toISOString().split('T')[0];
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    let existing = db.attendance.findOne(a =>
-      (a.employeeId === employeeId || a.employeeId === userId || a.employeeName.toLowerCase() === userName.toLowerCase()) &&
-      a.date === today
-    );
-
-    if (!existing || !existing.checkIn) {
-      return res.status(400).json({ success: false, message: 'Please clock in first before taking a break.' });
-    }
-
-    const breaks = existing.breaks || [];
-
-    if (action === 'START') {
-      const activeBreak = breaks.find(b => !b.end);
-      if (activeBreak) {
-        return res.status(400).json({ success: false, message: 'Break is already in progress.' });
-      }
-      breaks.push({ start: nowTime });
-    } else {
-      const activeBreak = breaks.find(b => !b.end);
-      if (!activeBreak) {
-        return res.status(400).json({ success: false, message: 'No active break to end.' });
-      }
-      activeBreak.end = nowTime;
-      activeBreak.durationMinutes = 30; // standard approx
-    }
-
-    const updated = db.attendance.updateById(existing._id, {
-      breaks,
-      updatedAt: new Date().toISOString()
-    })!;
-
-    return res.json({
-      success: true,
-      message: action === 'START' ? `☕ Break started at ${nowTime}` : `💪 Break ended at ${nowTime}. Back to work!`,
-      data: updated
-    });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  return hrToggleBreak(req, res);
 }
 
 // ----------------------------------------------------

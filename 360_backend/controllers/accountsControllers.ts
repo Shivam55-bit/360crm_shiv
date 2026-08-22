@@ -27,6 +27,20 @@ export async function getInvoices(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+export async function getInvoiceById(req: AuthenticatedRequest, res: Response) {
+  try {
+    const id = req.params.id;
+    const inv = db.invoices.findById(id) || db.invoices.findOne(i => i.invoiceNumber === id || i.salesOrderId === id);
+    if (!inv) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+    const customer = db.customers.findById(inv.customerId) || db.customers.findOne(c => c.name === inv.customerName);
+
+    return res.json({ success: true, data: { ...inv, customer } });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 export async function createInvoice(req: AuthenticatedRequest, res: Response) {
   try {
     const { customerId, customerName, salesOrderId, items, dueDate, notes, paymentTerms } = req.body;

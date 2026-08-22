@@ -225,7 +225,7 @@ export const DashboardView: React.FC<{ onNavigate: (viewId: string) => void }> =
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sales Invoiced</p>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <h4 className="text-2xl font-bold text-white mt-2">₹{cards.totalSales.toLocaleString('en-IN')}</h4>
+          <h4 className="text-2xl font-bold text-white mt-2">₹{(Number(cards.totalSales) || 0).toLocaleString('en-IN')}</h4>
           <p className="text-xs text-slate-400 mt-1">Across all confirmed billing</p>
         </div>
 
@@ -234,7 +234,7 @@ export const DashboardView: React.FC<{ onNavigate: (viewId: string) => void }> =
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock Valuation</p>
             <Boxes className="w-4 h-4 text-blue-400" />
           </div>
-          <h4 className="text-2xl font-bold text-white mt-2">₹{cards.stockValue.toLocaleString('en-IN')}</h4>
+          <h4 className="text-2xl font-bold text-white mt-2">₹{(Number(cards.stockValue) || 0).toLocaleString('en-IN')}</h4>
           <p className="text-xs text-slate-400 mt-1">Live physical warehouse value</p>
         </div>
 
@@ -243,7 +243,7 @@ export const DashboardView: React.FC<{ onNavigate: (viewId: string) => void }> =
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Purchase Orders</p>
             <ShoppingCart className="w-4 h-4 text-amber-400" />
           </div>
-          <h4 className="text-2xl font-bold text-white mt-2">₹{cards.totalPurchases.toLocaleString('en-IN')}</h4>
+          <h4 className="text-2xl font-bold text-white mt-2">₹{(Number(cards.totalPurchases) || 0).toLocaleString('en-IN')}</h4>
           <p className="text-xs text-slate-400 mt-1">Supplier commitments & POs</p>
         </div>
 
@@ -252,7 +252,7 @@ export const DashboardView: React.FC<{ onNavigate: (viewId: string) => void }> =
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Receivables</p>
             <Clock className="w-4 h-4 text-rose-400" />
           </div>
-          <h4 className="text-2xl font-bold text-white mt-2">₹{cards.pendingPayments.toLocaleString('en-IN')}</h4>
+          <h4 className="text-2xl font-bold text-white mt-2">₹{(Number(cards.pendingPayments) || 0).toLocaleString('en-IN')}</h4>
           <p className="text-xs text-slate-400 mt-1">Outstanding customer dues</p>
         </div>
       </div>
