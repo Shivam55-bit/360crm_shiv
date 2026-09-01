@@ -34,7 +34,10 @@ import {
   Zap,
   ArrowUpDown,
   ChevronDown,
-  Check
+  Check,
+  Edit2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 // ==========================================
@@ -42,7 +45,23 @@ import {
 // ==========================================
 export const EmployeesView: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -50,40 +69,162 @@ export const EmployeesView: React.FC = () => {
     phone: '',
     department: 'Sales',
     designation: 'Sales Executive',
-    salary: 40000
+    salary: 40000,
+    status: 'ACTIVE'
   });
 
   const fetchEmployees = async () => {
+    setLoading(true);
     const res = await api.get('/employees');
-    if (res.success && res.data) setEmployees(res.data);
+    if (res.success && res.data) {
+      setEmployees(res.data);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchEmployees();
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await api.post('/employees', formData);
-    if (res.success) {
-      setIsModalOpen(false);
-      fetchEmployees();
+  const handleOpenAdd = () => {
+    setEditingEmployee(null);
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      phone: '',
+      department: 'Sales',
+      designation: 'Sales Executive',
+      salary: 40000,
+      status: 'ACTIVE'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (emp: Employee) => {
+    setEditingEmployee(emp);
+    setFormData({
+      name: emp.name || '',
+      email: emp.email || '',
+      password: '',
+      phone: emp.phone || '',
+      department: emp.department || 'Sales',
+      designation: emp.designation || 'Sales Executive',
+      salary: emp.salary || 40000,
+      status: emp.status || 'ACTIVE'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingEmployee) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await api.delete(`/employees/${deletingEmployee._id}`);
+      if (res.success) {
+        showToast(res.message || `Employee ${deletingEmployee.name} deleted successfully.`, 'success');
+        setDeletingEmployee(null);
+        fetchEmployees();
+      } else {
+        showToast(res.message || 'Failed to delete employee.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Network error occurred.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (editingEmployee) {
+        // Update existing employee
+        const res = await api.put(`/employees/${editingEmployee._id}`, formData);
+        if (res.success) {
+          showToast(res.message || 'Employee profile updated successfully.', 'success');
+          setIsModalOpen(false);
+          fetchEmployees();
+        } else {
+          showToast(res.message || 'Failed to update employee.', 'error');
+        }
+      } else {
+        // Create new employee
+        const res = await api.post('/employees', formData);
+        if (res.success) {
+          showToast(res.message || 'Employee onboarded successfully.', 'success');
+          setIsModalOpen(false);
+          fetchEmployees();
+        } else {
+          showToast(res.message || 'Failed to onboard employee.', 'error');
+        }
+      }
+    } catch (err: any) {
+      showToast(err.message || 'An error occurred while saving.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Filtered employees list
+  const filteredEmployees = employees.filter(emp => {
+    const q = search.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      emp.name?.toLowerCase().includes(q) ||
+      emp.employeeId?.toLowerCase().includes(q) ||
+      emp.email?.toLowerCase().includes(q) ||
+      emp.designation?.toLowerCase().includes(q) ||
+      emp.phone?.includes(q);
+
+    const matchDept = !departmentFilter || emp.department === departmentFilter;
+    const matchStatus = !statusFilter || emp.status === statusFilter;
+
+    return matchSearch && matchDept && matchStatus;
+  });
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-6 relative">
+      {/* Sleek Floating In-App Toast */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-top-3 fade-in duration-200">
+          <div
+            className={`px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold flex items-center gap-2.5 backdrop-blur-md ${
+              toast.type === 'success'
+                ? 'bg-emerald-900/95 text-emerald-100 border-emerald-700/80 shadow-emerald-900/20'
+                : 'bg-rose-900/95 text-rose-100 border-rose-700/80 shadow-rose-900/20'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            )}
+            <span>{toast.text}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5 opacity-70 hover:opacity-100" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title="Employee Directory & HR"
         subtitle="Manage company staff profiles, designations, department allocation & payroll"
         actionText="Onboard Employee"
         actionIcon={Plus}
         actionPermission="employees.create"
-        onAction={() => setIsModalOpen(true)}
+        onAction={handleOpenAdd}
         secondaryAction={
           <button
-            onClick={() => exportToCSV('360CRM_Employees', employees)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl"
+            onClick={() => exportToCSV('360CRM_Employees', filteredEmployees)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
           >
             <Download className="w-4 h-4 text-slate-500" />
             Export CSV
@@ -91,50 +232,159 @@ export const EmployeesView: React.FC = () => {
         }
       />
 
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-semibold uppercase">
-              <tr>
-                <th className="px-6 py-3.5">Emp ID & Name</th>
-                <th className="px-6 py-3.5">Department</th>
-                <th className="px-6 py-3.5">Designation</th>
-                <th className="px-6 py-3.5">Contact Details</th>
-                <th className="px-6 py-3.5">Monthly Base Salary</th>
-                <th className="px-6 py-3.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {employees.map(e => (
-                <tr key={e._id} className="hover:bg-slate-50/70">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-900">{e.name}</div>
-                    <div className="text-[11px] text-blue-600 font-mono">{e.employeeId}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-semibold text-slate-700 text-[11px]">
-                      {e.department}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-slate-800">{e.designation}</td>
-                  <td className="px-6 py-4">
-                    <div>{e.phone}</div>
-                    <div className="text-[11px] text-slate-400">{e.email}</div>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-slate-900">₹{e.salary.toLocaleString('en-IN')}</td>
-                  <td className="px-6 py-4"><StatusBadge status={e.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Filter & Search Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, Emp ID, email, designation, phone..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <select
+              value={departmentFilter}
+              onChange={e => setDepartmentFilter(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
+            >
+              <option value="">All Departments</option>
+              <option value="Sales">Sales</option>
+              <option value="Store / Warehouse">Store / Warehouse</option>
+              <option value="Store">Store</option>
+              <option value="Accounts">Accounts</option>
+              <option value="HR & Admin">HR & Admin</option>
+              <option value="HR">HR</option>
+              <option value="Marketing">Marketing</option>
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
+            >
+              <option value="">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="ON_LEAVE">On Leave</option>
+            </select>
+
+            {(search || departmentFilter || statusFilter) && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setDepartmentFilter('');
+                  setStatusFilter('');
+                }}
+                className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                title="Reset Filters"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs pt-1 px-1 text-slate-500 font-medium border-t border-slate-100">
+          <span>
+            Showing <strong className="text-slate-800">{filteredEmployees.length}</strong> of{' '}
+            <strong className="text-slate-800">{employees.length}</strong> registered staff members
+          </span>
         </div>
       </div>
 
+      {/* Employees Table */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 text-xs font-semibold flex items-center justify-center gap-2">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span>Loading Employee Directory...</span>
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <User className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-bold text-slate-800">No employees match your search</p>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Try clearing your search query or selecting a different department or status filter.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-semibold uppercase">
+                <tr>
+                  <th className="px-6 py-3.5">Emp ID & Name</th>
+                  <th className="px-6 py-3.5">Department</th>
+                  <th className="px-6 py-3.5">Designation</th>
+                  <th className="px-6 py-3.5">Contact Details</th>
+                  <th className="px-6 py-3.5">Monthly Base Salary</th>
+                  <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5 text-right min-w-[120px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {filteredEmployees.map(e => (
+                  <tr key={e._id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900">{e.name}</div>
+                      <div className="text-[11px] text-blue-600 font-mono font-semibold">{e.employeeId}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-semibold text-slate-700 text-[11px]">
+                        {e.department}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-slate-800">{e.designation}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800">{e.phone || '—'}</div>
+                      <div className="text-[11px] text-slate-400 font-normal">{e.email}</div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-900">₹{Number(e.salary || 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={e.status || 'ACTIVE'} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleOpenEdit(e)}
+                          className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200 cursor-pointer"
+                          title="Edit Employee"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingEmployee(e)}
+                          className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-200 cursor-pointer"
+                          title="Delete Employee"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Onboard / Edit Employee Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Onboard New Employee"
-        subtitle="Register employee profile, salary and contact details"
+        title={editingEmployee ? `Edit Employee: ${editingEmployee.name}` : 'Onboard New Employee'}
+        subtitle={
+          editingEmployee
+            ? `Update staff details, department allocation, salary or status (${editingEmployee.employeeId})`
+            : 'Register employee profile, salary and contact details'
+        }
       >
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-4">
@@ -145,7 +395,7 @@ export const EmployeesView: React.FC = () => {
                 required
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
             <div>
@@ -155,21 +405,23 @@ export const EmployeesView: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Password *</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                {editingEmployee ? 'Password (Leave blank to keep unchanged)' : 'Portal Login Password *'}
+              </label>
               <input
                 type="password"
-                required
-                placeholder="Required for portal login"
+                required={!editingEmployee}
+                placeholder={editingEmployee ? '••••••••' : 'Enter login password'}
                 value={formData.password}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
             <div>
@@ -179,19 +431,20 @@ export const EmployeesView: React.FC = () => {
                 required
                 value={formData.designation}
                 onChange={e => setFormData({ ...formData, designation: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Phone</label>
+              <label className="block font-semibold text-slate-700 mb-1">Phone Number</label>
               <input
                 type="text"
                 value={formData.phone}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                placeholder="+91 98765 43210"
               />
             </div>
             <div>
@@ -199,12 +452,14 @@ export const EmployeesView: React.FC = () => {
               <select
                 value={formData.department}
                 onChange={e => setFormData({ ...formData, department: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               >
                 <option value="Sales">Sales</option>
                 <option value="Store / Warehouse">Store / Warehouse</option>
+                <option value="Store">Store</option>
                 <option value="Accounts">Accounts</option>
                 <option value="HR & Admin">HR & Admin</option>
+                <option value="HR">HR</option>
                 <option value="Marketing">Marketing</option>
               </select>
             </div>
@@ -214,27 +469,123 @@ export const EmployeesView: React.FC = () => {
                 type="number"
                 value={formData.salary}
                 onChange={e => setFormData({ ...formData, salary: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
+
+          {editingEmployee && (
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Account Status</label>
+              <select
+                value={formData.status}
+                onChange={e => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="ON_LEAVE">On Leave</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold"
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-blue-600 text-white rounded-xl font-semibold shadow-xs"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
-              Save Employee
+              {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              <span>{editingEmployee ? 'Save Changes' : 'Complete Onboarding'}</span>
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingEmployee)}
+        onClose={() => setDeletingEmployee(null)}
+        title="Confirm Employee Deletion"
+        subtitle="Permanently remove staff record and system credentials"
+        maxWidth="max-w-md"
+      >
+        {deletingEmployee && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 p-3.5 bg-rose-50/90 border border-rose-200/80 rounded-2xl">
+              <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-rose-900">Are you sure you want to delete this employee?</h4>
+                <p className="text-[11px] text-rose-700 mt-1 leading-relaxed">
+                  This action is permanent. It will remove <strong>{deletingEmployee.name}</strong> from directory and deactivate login access.
+                </p>
+              </div>
+            </div>
+
+            {/* Employee Preview Box */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
+                    {deletingEmployee.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900">{deletingEmployee.name}</div>
+                    <div className="text-[10px] text-blue-600 font-mono font-semibold">{deletingEmployee.employeeId}</div>
+                  </div>
+                </div>
+                <StatusBadge status={deletingEmployee.status || 'ACTIVE'} />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-200/70 text-slate-600">
+                <div>
+                  <span className="text-slate-400">Dept: </span>
+                  <strong className="text-slate-700">{deletingEmployee.department}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400">Role: </span>
+                  <strong className="text-slate-700">{deletingEmployee.designation}</strong>
+                </div>
+                <div className="col-span-2 text-slate-500">
+                  <span className="text-slate-400">Email: </span>
+                  {deletingEmployee.email}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingEmployee(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Yes, Delete Employee</span>
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

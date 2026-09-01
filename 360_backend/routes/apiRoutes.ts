@@ -13,6 +13,10 @@ import * as hrCtrl from '../controllers/peopleControllers';
 import * as actCtrl from '../controllers/activityController';
 import * as mktCtrl from '../controllers/marketingControllers';
 import * as sysCtrl from '../controllers/systemControllers';
+import * as tradeIndiaCtrl from '../controllers/tradeIndiaController';
+import * as intCtrl from '../controllers/integrationController';
+import * as whCtrl from '../controllers/webhookController';
+import * as trackingCtrl from '../controllers/employeeTrackingController';
 import employeeRouter from './employeeRoutes';
 
 const router = Router();
@@ -180,22 +184,74 @@ router.patch('/leaves/:id/status', authenticateToken, hrCtrl.updateLeaveStatus);
 router.get('/campaigns', authenticateToken, requirePermission('campaigns.view'), mktCtrl.getCampaigns);
 router.post('/campaigns', authenticateToken, requirePermission('campaigns.create'), mktCtrl.createCampaign);
 router.get('/lead-sources', authenticateToken, requirePermission('lead_sources.view'), mktCtrl.getLeadSources);
-
-// External Webhook Ingestion (Public with payload validation)
-router.post('/tradeindia/webhook', mktCtrl.receiveTradeIndiaLead);
-router.post('/website-leads', mktCtrl.receiveWebsiteLead);
 router.post('/whatsapp/send', authenticateToken, requirePermission('whatsapp.view'), mktCtrl.sendWhatsAppMessage);
+
+// ==================== ENTERPRISE INBOUND WEBHOOKS (PUBLIC) ====================
+router.post('/webhooks/leads/:integrationId', whCtrl.handleLeadWebhook);
+router.post('/webhooks/leads', whCtrl.handleLeadWebhook);
+router.post('/website-leads', whCtrl.handleLeadWebhook);
+router.post('/tradeindia/webhook', whCtrl.handleLeadWebhook);
+
+router.get('/webhooks/whatsapp/:integrationId', whCtrl.handleWhatsAppVerify);
+router.get('/webhooks/whatsapp', whCtrl.handleWhatsAppVerify);
+router.post('/webhooks/whatsapp/:integrationId', whCtrl.handleWhatsAppWebhook);
+router.post('/webhooks/whatsapp', whCtrl.handleWhatsAppWebhook);
+
+router.post('/webhooks/razorpay/:integrationId', whCtrl.handleRazorpayWebhook);
+router.post('/webhooks/razorpay', whCtrl.handleRazorpayWebhook);
+
+router.post('/webhooks/stripe/:integrationId', whCtrl.handleStripeWebhook);
+router.post('/webhooks/stripe', whCtrl.handleStripeWebhook);
 
 // ==================== SYSTEM, DASHBOARD, REPORTS & AUDIT ====================
 router.get('/dashboard', authenticateToken, sysCtrl.getDashboardStats);
 router.get('/superadmin/stats', authenticateToken, requireRole('SUPER_ADMIN'), sysCtrl.getSuperAdminStats);
 router.get('/reports', authenticateToken, requirePermission('reports.view'), sysCtrl.getReports);
-router.get('/integrations', authenticateToken, requirePermission('integrations.view'), sysCtrl.getIntegrations);
-router.post('/integrations', authenticateToken, requirePermission('integrations.manage'), sysCtrl.createIntegration);
-router.put('/integrations/:id', authenticateToken, requirePermission('integrations.manage'), sysCtrl.updateIntegration);
-router.delete('/integrations/:id', authenticateToken, requirePermission('integrations.manage'), sysCtrl.deleteIntegration);
-router.post('/integrations/:id/test', authenticateToken, requirePermission('integrations.manage'), sysCtrl.testIntegrationConnection);
-router.post('/integrations/:id/sync', authenticateToken, requirePermission('integrations.manage'), sysCtrl.syncIntegrationNow);
 router.get('/audit-logs', authenticateToken, requirePermission('audit_logs.view'), sysCtrl.getAuditLogs);
+
+// ==================== ENTERPRISE CONNECTORS & INTEGRATION ENGINE ====================
+router.get('/integrations', authenticateToken, requirePermission('integrations.view'), intCtrl.getIntegrations);
+router.get('/integrations/:id', authenticateToken, requirePermission('integrations.view'), intCtrl.getIntegrationById);
+router.post('/integrations', authenticateToken, requirePermission('integrations.manage'), intCtrl.createIntegration);
+router.put('/integrations/:id', authenticateToken, requirePermission('integrations.manage'), intCtrl.updateIntegration);
+router.delete('/integrations/:id', authenticateToken, requirePermission('integrations.manage'), intCtrl.deleteIntegration);
+
+router.post('/integrations/:id/test', authenticateToken, requirePermission('integrations.manage'), intCtrl.testIntegrationConnection);
+router.post('/integrations/:id/sync', authenticateToken, requirePermission('integrations.manage'), intCtrl.syncIntegrationNow);
+router.post('/integrations/:id/activate', authenticateToken, requirePermission('integrations.manage'), intCtrl.activateIntegration);
+router.post('/integrations/:id/pause', authenticateToken, requirePermission('integrations.manage'), intCtrl.pauseIntegration);
+router.get('/integrations/:id/logs', authenticateToken, requirePermission('integrations.view'), intCtrl.getIntegrationLogs);
+router.post('/integrations/custom-rest/preview', authenticateToken, requirePermission('integrations.manage'), intCtrl.testCustomRestPreview);
+
+// ==================== ADVANCED EMPLOYEE LIVE TRACKING & GEOFENCING ====================
+// Employee Location Ingestion & Consent
+router.post('/employee-tracking/location', authenticateToken, trackingCtrl.postLocation);
+router.post('/employee-tracking/location/batch', authenticateToken, trackingCtrl.postBatchLocations);
+router.get('/employee-tracking/my-status', authenticateToken, trackingCtrl.getMyTrackingStatus);
+router.post('/employee-tracking/my-consent', authenticateToken, trackingCtrl.postMyConsent);
+
+// HR / Admin Live Map & Telemetry
+router.get('/employee-tracking/live', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getLiveEmployees);
+router.get('/employee-tracking/stream', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.streamLiveTracking);
+router.get('/employee-tracking/employee/:id', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getEmployeeTrackingDetail);
+router.get('/employee-tracking/employee/:id/route', authenticateToken, requirePermission('employee_tracking.view_history'), trackingCtrl.getEmployeeRouteHistory);
+router.get('/employee-tracking/employee/:id/timeline', authenticateToken, requirePermission('employee_tracking.view_history'), trackingCtrl.getEmployeeTimeline);
+router.get('/employee-tracking/employee/:id/daily-summary', authenticateToken, requirePermission('employee_tracking.view_history'), trackingCtrl.getEmployeeDailySummary);
+
+// Geofence Management
+router.get('/employee-tracking/geofences', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getGeofences);
+router.post('/employee-tracking/geofences', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.createGeofence);
+router.put('/employee-tracking/geofences/:id', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.updateGeofence);
+router.delete('/employee-tracking/geofences/:id', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.deleteGeofence);
+
+// Tracking Policy Settings & Reports
+router.get('/employee-tracking/settings', authenticateToken, requirePermission('employee_tracking.manage'), trackingCtrl.getTrackingSettings);
+router.put('/employee-tracking/settings', authenticateToken, requirePermission('employee_tracking.manage'), trackingCtrl.updateTrackingSettings);
+router.get('/employee-tracking/export', authenticateToken, requirePermission('employee_tracking.export'), trackingCtrl.exportTrackingReport);
+
+// Legacy TradeIndia specific routes
+router.get('/integrations/tradeindia/status', authenticateToken, tradeIndiaCtrl.getTradeIndiaStatus);
+router.post('/integrations/tradeindia/sync', authenticateToken, requirePermission('integrations.manage'), tradeIndiaCtrl.manualTradeIndiaSync);
+router.post('/integrations/tradeindia/config', authenticateToken, requirePermission('integrations.manage'), tradeIndiaCtrl.updateTradeIndiaConfig);
 
 export default router;

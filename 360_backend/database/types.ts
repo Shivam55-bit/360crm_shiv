@@ -51,6 +51,7 @@ export interface LeadDoc {
   email: string;
   phone: string;
   source: string; // 'Website' | 'TradeIndia' | 'IndiaMART' | 'WhatsApp' | 'Referral' | 'Google' | 'Manual'
+  channel?: string; // 'B2B Portal' | 'Website' | 'Direct' | 'Campaign' | string
   status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST' | 'CONVERTED';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   leadScore?: number;
@@ -61,6 +62,13 @@ export interface LeadDoc {
   probability?: number;
   city?: string;
   state?: string;
+  country?: string;
+  productName?: string;
+  requirement?: string;
+  quantity?: number | string;
+  sourceLeadId?: string; // Unique external Lead ID (e.g. TradeIndia generated_id / lead_id)
+  externalLeadId?: string;
+  rawSourceData?: any;
   convertedCustomerId?: string;
   convertedQuotationId?: string;
   notes?: string;
@@ -157,6 +165,7 @@ export interface LeadSourceDoc {
   leadsCount: number;
   conversionRate: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ProductDoc {
@@ -474,6 +483,19 @@ export interface EmployeeDoc {
     bankName: string;
     ifsc: string;
   };
+  trackingEnabled?: boolean;
+  trackingMode?: 'ATTENDANCE_ONLY' | 'WORKING_HOURS' | 'ACTIVE_SHIFT' | 'FIELD_ONLY' | 'MANUAL' | 'DEFAULT';
+  locationConsent?: {
+    status: 'GRANTED' | 'DENIED' | 'PENDING';
+    grantedAt?: string;
+    ipAddress?: string;
+    policyVersion?: string;
+  };
+  isFieldEmployee?: boolean;
+  assignedGeofenceIds?: string[];
+  shiftStart?: string; // e.g. "09:30"
+  shiftEnd?: string;   // e.g. "18:30"
+  workingDays?: string[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -791,21 +813,251 @@ export interface AuditLogDoc {
 export interface IntegrationDoc {
   _id: string;
   name: string;
-  code: string; // 'tradeindia' | 'indiamart' | 'whatsapp' | 'website_webhook' | 'email_smtp' | 'custom_rest_api' | 'razorpay' | 'sms_gateway' | string
-  category?: 'PORTAL' | 'WEBHOOK' | 'COMMUNICATION' | 'PAYMENT' | 'CUSTOM';
-  status: 'ACTIVE' | 'INACTIVE' | 'CONFIGURED';
+  code: string; // 'tradeindia' | 'indiamart' | 'whatsapp' | 'website_webhook' | 'custom_rest_api' | 'razorpay' | 'stripe' | string
+  provider?: string; // 'TradeIndia' | 'IndiaMART' | 'Website' | 'WhatsApp' | 'Razorpay' | 'Stripe' | 'Custom REST' | string
+  category?: 'PORTAL' | 'WEBHOOK' | 'COMMUNICATION' | 'PAYMENT' | 'CUSTOM' | string;
+  connectionMode?: 'POLLING' | 'WEBHOOK' | 'API' | 'HYBRID' | string;
+  status: 'ACTIVE' | 'INACTIVE' | 'CONFIGURED' | 'ERROR' | 'PAUSED';
   endpointUrl?: string;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
-  authType?: 'API_KEY' | 'BEARER_TOKEN' | 'BASIC_AUTH' | 'NO_AUTH' | 'WEBHOOK_SECRET';
+  authType?: 'API_KEY' | 'BEARER_TOKEN' | 'BASIC_AUTH' | 'NO_AUTH' | 'WEBHOOK_SECRET' | 'CUSTOM_HEADERS' | 'QUERY_PARAM' | string;
   apiKey?: string;
   apiSecret?: string;
-  syncFrequency?: 'REALTIME' | 'EVERY_5_MIN' | 'HOURLY' | 'DAILY' | 'MANUAL';
+  webhookSecret?: string;
+  syncFrequency?: 'REALTIME' | 'EVERY_5_MIN' | 'EVERY_15_MIN' | 'EVERY_30_MIN' | 'HOURLY' | 'EVERY_6_HOURS' | 'DAILY' | 'MANUAL' | string;
   description?: string;
   config: Record<string, any>;
+  fieldMapping?: Record<string, string>;
+  credentials?: Record<string, any>;
   lastSyncedAt?: string;
+  lastSuccessfulSyncAt?: string;
+  nextSyncAt?: string;
+  lastSyncStatus?: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'IDLE' | 'ERROR';
+  lastSyncError?: string;
+  lastSyncResult?: {
+    fetched: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+  };
+  totalFetched?: number;
+  totalCreated?: number;
+  totalUpdated?: number;
+  totalFailed?: number;
   totalSyncedEvents: number;
   lastTestStatus?: 'SUCCESS' | 'FAILED' | 'PENDING';
   lastTestResponse?: string;
+  isSyncing?: boolean;
+  syncStartedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
   createdAt?: string;
   updatedAt: string;
+}
+
+export interface IntegrationLogDoc {
+  _id: string;
+  integrationId: string;
+  integrationName: string;
+  provider: string;
+  triggerType: 'SCHEDULED' | 'MANUAL' | 'WEBHOOK' | string;
+  status: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'RUNNING' | string;
+  startedAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  fetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  errorMessage?: string;
+  details?: any;
+  requestId?: string;
+  createdAt: string;
+}
+
+// ==========================================
+// ENTERPRISE EMPLOYEE LIVE TRACKING & GEOFENCING
+// ==========================================
+
+export type TrackingModeType =
+  | 'ATTENDANCE_ONLY'
+  | 'WORKING_HOURS'
+  | 'ACTIVE_SHIFT'
+  | 'FIELD_ONLY'
+  | 'MANUAL';
+
+export type LiveTrackingStatus =
+  | 'ONLINE'
+  | 'OFFLINE'
+  | 'IDLE'
+  | 'STALE'
+  | 'TRAVELLING'
+  | 'STOPPED'
+  | 'ON_LEAVE';
+
+export type WorkLocationType =
+  | 'OFFICE'
+  | 'FIELD'
+  | 'REMOTE'
+  | 'TRANSIT'
+  | 'CLIENT_SITE';
+
+export interface LatestLocationDoc {
+  _id: string; // e.g. `loc_latest_${employeeId}`
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  department: string;
+  designation: string;
+  avatar?: string;
+  phone?: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number; // in meters
+  speed?: number; // m/s
+  speedKmh?: number;
+  heading?: number; // degrees (0-360)
+  altitude?: number;
+  batteryLevel?: number; // 0-100%
+  isCharging?: boolean;
+  trackingStatus: LiveTrackingStatus;
+  workLocationType: WorkLocationType;
+  currentGeofenceId?: string;
+  currentGeofenceName?: string;
+  isInsideGeofence: boolean;
+  distanceFromOfficeMeters: number;
+  address?: string;
+  lastRecordedAt: string; // ISO
+  lastReceivedAt: string; // ISO
+  shiftId?: string;
+  attendanceId?: string;
+  attendanceStatus?: string;
+  distanceTodayKm: number;
+  currentStopDurationMinutes?: number;
+  stoppedSince?: string;
+  deviceId?: string;
+  platform?: string;
+  anomalyFlags?: string[]; // e.g. ['POOR_ACCURACY', 'JUMP_DETECTED']
+  isMockLocation?: boolean;
+  updatedAt: string;
+}
+
+export interface LocationHistoryDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  speed?: number;
+  speedKmh?: number;
+  heading?: number;
+  batteryLevel?: number;
+  recordedAt: string; // ISO
+  receivedAt: string; // ISO
+  source: 'GPS' | 'NETWORK' | 'WEB_BROWSER' | 'MOBILE_APP' | 'OFFLINE_SYNC';
+  shiftId?: string;
+  attendanceId?: string;
+  geofenceId?: string;
+  geofenceName?: string;
+  isInsideGeofence: boolean;
+  distanceFromOfficeMeters: number;
+  address?: string;
+  isStop?: boolean;
+  stopDurationMinutes?: number;
+  deviceId?: string;
+  anomalyFlag?: string;
+}
+
+export interface GeofenceDoc {
+  _id: string;
+  name: string;
+  code: string;
+  category: 'OFFICE' | 'WAREHOUSE' | 'BRANCH' | 'CLIENT_SITE' | 'PROJECT_SITE';
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  assignedDepartments?: string[];
+  assignedEmployees?: string[];
+  alertOnEntry: boolean;
+  alertOnExit: boolean;
+  enabled: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GeofenceEventDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  geofenceId: string;
+  geofenceName: string;
+  eventType: 'ENTER' | 'EXIT' | 'DWELL';
+  timestamp: string;
+  durationMinutes?: number;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+}
+
+export interface TrackingPolicyDoc {
+  _id: string; // 'tracking_policy_config'
+  enabled: boolean;
+  trackingMode: TrackingModeType;
+  updateFrequencySeconds: number; // e.g. 60
+  stationaryFrequencySeconds: number; // e.g. 300
+  minAcceptableAccuracyMeters: number; // e.g. 100
+  maxAllowableSpeedKmh: number; // e.g. 140 (for jump filter)
+  stopRadiusMeters: number; // e.g. 60
+  stopMinDurationMinutes: number; // e.g. 10
+  storeRouteHistory: boolean;
+  routeRetentionDays: number; // e.g. 30
+  enableGeofencing: boolean;
+  notifyEmployeeWhenTracking: boolean;
+  requireEmployeeConsent: boolean;
+  allowOfflineQueue: boolean;
+  maxOfflineQueueItems: number;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface DailyTrackingSummaryDoc {
+  _id: string; // `sum_${employeeId}_${date}`
+  employeeId: string;
+  employeeName: string;
+  department?: string;
+  date: string; // YYYY-MM-DD
+  checkInTime?: string;
+  checkOutTime?: string;
+  totalWorkingMinutes: number;
+  totalTrackedMinutes: number;
+  totalFieldMinutes: number;
+  totalOfficeMinutes: number;
+  totalStopMinutes: number;
+  totalDistanceKm: number;
+  geofenceVisitsCount: number;
+  stopsCount: number;
+  firstLocationTime?: string;
+  lastLocationTime?: string;
+  firstLocationAddress?: string;
+  lastLocationAddress?: string;
+  updatedAt: string;
+}
+
+export interface TrackingAlertDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  type: 'OUTSIDE_GEOFENCE' | 'LOW_BATTERY' | 'TRACKING_OFFLINE' | 'ANOMALY_SPEED' | 'LOCATION_SPOOF_RISK';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  message: string;
+  details?: any;
+  timestamp: string;
+  acknowledged: boolean;
 }

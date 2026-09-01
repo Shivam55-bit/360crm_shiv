@@ -110,9 +110,47 @@ export async function updateEmployee(req: AuthenticatedRequest, res: Response) {
     const existing = db.employees.findById(id);
     if (!existing) return res.status(404).json({ success: false, message: 'Employee not found' });
 
-    const updated = db.employees.updateById(id, req.body);
-    recordAuditLog(req, 'UPDATE', 'employees', 'Employee', id, existing, req.body);
-    return res.json({ success: true, message: 'Employee updated', data: updated });
+    const { name, email, phone, department, designation, salary, status, joiningDate, password } = req.body || {};
+
+    const updates: any = {
+      ...req.body,
+      salary: salary !== undefined ? Number(salary) : existing.salary,
+      updatedAt: new Date().toISOString()
+    };
+    delete updates.password; // Do not store plaintext password in employee doc
+
+    const updated = db.employees.updateById(id, updates);
+
+    // Synchronize associated user account
+    if (existing.userId) {
+      const user = db.users.findById(existing.userId);
+      if (user) {
+        let newRole = user.role;
+        if (department === 'Sales') newRole = 'SALES_EMPLOYEE';
+        else if (department === 'Store / Warehouse') newRole = 'STORE_EMPLOYEE';
+        else if (department === 'Accounts') newRole = 'ACCOUNTANT';
+        else if (department === 'HR & Admin') newRole = 'HR_EMPLOYEE';
+
+        const userUpdates: any = {
+          name: name || user.name,
+          email: email || user.email,
+          phone: phone !== undefined ? phone : user.phone,
+          status: status || user.status,
+          role: newRole,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (password && String(password).trim()) {
+          const salt = await bcrypt.genSalt(10);
+          userUpdates.passwordHash = await bcrypt.hash(String(password).trim(), salt);
+        }
+
+        db.users.updateById(user._id, userUpdates);
+      }
+    }
+
+    recordAuditLog(req, 'UPDATE', 'employees', `Updated employee profile for ${updated.name} (${updated.employeeId})`, id, existing, updates);
+    return res.json({ success: true, message: `Employee ${updated.name} updated successfully.`, data: updated });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -125,8 +163,14 @@ export async function deleteEmployee(req: AuthenticatedRequest, res: Response) {
     if (!existing) return res.status(404).json({ success: false, message: 'Employee not found' });
 
     db.employees.deleteById(id);
-    recordAuditLog(req, 'DELETE', 'employees', 'Employee', id, existing);
-    return res.json({ success: true, message: 'Employee deleted' });
+
+    // Delete linked user login if exists
+    if (existing.userId) {
+      db.users.deleteById(existing.userId);
+    }
+
+    recordAuditLog(req, 'DELETE', 'employees', `Deleted employee ${existing.name} (${existing.employeeId})`, id, existing);
+    return res.json({ success: true, message: `Employee ${existing.name} (${existing.employeeId}) deleted successfully.` });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }

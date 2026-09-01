@@ -1,0 +1,52 @@
+[
+  {
+    "_id": "geve_1",
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "geofenceId": "geo_noida_hq",
+    "geofenceName": "Noida Corporate Office",
+    "eventType": "ENTER",
+    "timestamp": "2026-08-29T09:27:00.000Z",
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "accuracy": 10
+  },
+  {
+    "_id": "geve_2",
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "geofenceId": "geo_noida_hq",
+    "geofenceName": "Noida Corporate Office",
+    "eventType": "EXIT",
+    "timestamp": "2026-08-29T10:05:00.000Z",
+    "durationMinutes": 38,
+    "latitude": 28.6145,
+    "longitude": 77.2115,
+    "accuracy": 12
+  },
+  {
+    "_id": "geve_3",
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "geofenceId": "geo_shree_cement_site",
+    "geofenceName": "Shree Cement Infrastructure Site",
+    "eventType": "ENTER",
+    "timestamp": "2026-08-29T11:18:00.000Z",
+    "latitude": 28.548,
+    "longitude": 77.375,
+    "accuracy": 14
+  },
+  {
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "geofenceId": "geo_shree_cement_site",
+    "geofenceName": "Shree Cement Infrastructure Site",
+    "eventType": "EXIT",
+    "timestamp": "2026-08-29T11:32:58.404Z",
+    "durationMinutes": 15,
+    "latitude": 28.6173,
+    "longitude": 77.070324,
+    "accuracy": 500,
+    "_id": "geo_1788003178436_1scmm"
+  }
+]

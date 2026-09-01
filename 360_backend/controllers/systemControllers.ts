@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { db } from '../database/db';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
+import { TradeIndiaSyncService } from '../services/tradeIndiaSync.service';
 
 // DASHBOARD STATS (Exact match with screenshot & live data)
 export async function getDashboardStats(req: AuthenticatedRequest, res: Response) {
@@ -376,6 +377,20 @@ export async function syncIntegrationNow(req: AuthenticatedRequest, res: Respons
     const id = req.params.id;
     const integration = db.integrations.findById(id);
     if (!integration) return res.status(404).json({ success: false, message: 'Integration not found' });
+
+    if (integration.code === 'tradeindia' || id === 'int_1') {
+      const syncResult = await TradeIndiaSyncService.executeSync({
+        manualTrigger: true,
+        triggeredBy: req.user?.name || 'Admin'
+      });
+      const fresh = db.integrations.findById(id);
+      recordAuditLog(req, 'MANUAL_SYNC', 'integrations', 'TradeIndia Connector', id, null, syncResult.data);
+      return res.json({
+        success: syncResult.success,
+        message: syncResult.message,
+        data: fresh || syncResult.data
+      });
+    }
 
     const addedEvents = Math.floor(Math.random() * 5) + 1;
     const now = new Date().toISOString();

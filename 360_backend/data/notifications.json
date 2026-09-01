@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "not_1",
+    "userId": "usr_employee_arjun",
+    "title": "New Lead Assigned",
+    "message": "Ramesh Choudhary from Marwar Steel & Rolling Mills has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-02-16T09:30:00.000Z"
+  },
+  {
+    "_id": "not_2",
+    "userId": "usr_employee_arjun",
+    "title": "Follow-up Reminder",
+    "message": "Call scheduled with Vikramaditya Solanki (Solanki Chem) today at 11:30 AM.",
+    "type": "FOLLOWUP_REMINDER",
+    "isRead": false,
+    "createdAt": "2026-02-16T09:00:00.000Z"
+  },
+  {
+    "_id": "not_3",
+    "userId": "usr_employee_arjun",
+    "title": "Salary Credited",
+    "message": "January 2026 salary slip of ₹43,400 has been processed and credited to your account.",
+    "type": "SALARY_PUBLISHED",
+    "isRead": true,
+    "createdAt": "2026-02-01T10:00:00.000Z"
+  }
+]

@@ -126,52 +126,124 @@ export async function getPayments(req: AuthenticatedRequest, res: Response) {
 
 export async function createPayment(req: AuthenticatedRequest, res: Response) {
   try {
-    const { invoiceId, partyId, partyName, partyType, amount, paymentMode, transactionReference, notes } = req.body;
-    const pAmount = Number(amount);
+    const {
+      invoiceId,
+      partyId,
+      partyName,
+      customerName,
+      customerId,
+      partyType,
+      amount,
+      paymentMode,
+      paymentMethod,
+      transactionReference,
+      referenceNumber,
+      paymentDate,
+      date,
+      notes
+    } = req.body || {};
 
-    if (!partyName || !pAmount || pAmount <= 0 || !paymentMode) {
-      return res.status(400).json({ success: false, message: 'Party name, valid amount, and payment mode are required.' });
+    const pAmount = Number(amount);
+    const pPartyName = partyName || customerName;
+    let pPartyId = partyId || customerId;
+    const pMode = paymentMode || paymentMethod || 'BANK';
+    const pRef = transactionReference || referenceNumber || `TXN_${Date.now()}`;
+    const pDate = paymentDate || date || new Date().toISOString().split('T')[0];
+
+    if (!pPartyName || !pAmount || pAmount <= 0 || !pMode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer/Party name, valid amount (> 0), and payment mode are required.'
+      });
     }
 
     const count = db.payments.countDocuments() + 1;
     const paymentNumber = `PAY-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
 
-    // If linked to invoice, adjust invoice balance
+    // 1. If linked to invoice, adjust invoice balance and determine customerId
+    let linkedInvoiceNumber = req.body.invoiceNumber || '';
     if (invoiceId) {
       const invoice = db.invoices.findById(invoiceId);
       if (invoice) {
+        linkedInvoiceNumber = invoice.invoiceNumber;
+        if (!pPartyId && invoice.customerId) {
+          pPartyId = invoice.customerId;
+        }
+
         const nextPaid = (invoice.paidAmount || 0) + pAmount;
-        const nextDue = Math.max(0, invoice.grandTotal - nextPaid);
+        const nextDue = Math.max(0, (invoice.grandTotal || 0) - nextPaid);
         const nextStatus = nextDue <= 0 ? 'PAID' : (nextPaid > 0 ? 'PARTIAL' : 'ISSUED');
+        const nextPaymentStatus = nextDue <= 0 ? 'PAID' : (nextPaid > 0 ? 'PARTIAL' : 'UNPAID');
 
         db.invoices.updateById(invoiceId, {
           paidAmount: nextPaid,
           dueAmount: nextDue,
-          status: nextStatus
+          status: nextStatus,
+          paymentStatus: nextPaymentStatus,
+          updatedAt: new Date().toISOString()
         });
       }
     }
 
+    // 2. Adjust Customer Outstanding Ledger Balance
+    const targetCustId = pPartyId || customerId;
+    if (targetCustId && targetCustId !== 'client_ref') {
+      const customer = db.customers.findById(targetCustId) || db.customers.findOne(c => c.name === pPartyName || c.companyName === pPartyName);
+      if (customer) {
+        const nextCustomerBalance = Math.max(0, (customer.outstandingBalance || 0) - pAmount);
+        db.customers.updateById(customer._id, {
+          outstandingBalance: nextCustomerBalance,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Add to customer activity timeline
+        db.activityTimeline.insertOne({
+          entityType: 'CUSTOMER',
+          entityId: customer._id,
+          action: 'PAYMENT',
+          description: `Payment receipt ${paymentNumber} of ₹${pAmount.toLocaleString('en-IN')} received via ${pMode}${linkedInvoiceNumber ? ` against Invoice ${linkedInvoiceNumber}` : ''}`,
+          performedBy: req.user?.name || 'Accounts Desk',
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // 3. Save comprehensive payment document
     const newPayment = db.payments.insertOne({
       paymentNumber,
-      invoiceId,
-      partyId: partyId || 'client_ref',
-      partyName,
+      invoiceId: invoiceId || undefined,
+      invoiceNumber: linkedInvoiceNumber || undefined,
+      partyId: targetCustId || 'client_ref',
+      partyName: pPartyName,
+      customerId: targetCustId || undefined,
+      customerName: pPartyName,
       type: partyType === 'SUPPLIER' ? 'OUTFLOW' : 'INFLOW',
       amount: pAmount,
-      paymentMode,
-      transactionReference: transactionReference || `TXN_${Date.now()}`,
-      date: new Date().toISOString(),
+      paymentMode: pMode,
+      paymentMethod: pMode,
+      transactionReference: pRef,
+      referenceNumber: pRef,
+      date: pDate,
+      paymentDate: pDate,
       notes: notes || '',
       receivedBy: req.user?.name || 'Accountant',
       createdAt: new Date().toISOString()
     });
 
-    recordAuditLog(req, 'CREATE', 'Payments', `Recorded payment receipt ${paymentNumber} of ₹${pAmount.toLocaleString('en-IN')} from ${partyName}`, newPayment._id, undefined, newPayment);
+    db.activityTimeline.insertOne({
+      entityType: 'PAYMENT',
+      entityId: newPayment._id,
+      action: 'CREATE',
+      description: `Payment receipt ${paymentNumber} recorded for ₹${pAmount.toLocaleString('en-IN')} from ${pPartyName}`,
+      performedBy: req.user?.name || 'Accounts Desk',
+      timestamp: new Date().toISOString()
+    });
+
+    recordAuditLog(req, 'CREATE', 'Payments', `Recorded payment receipt ${paymentNumber} of ₹${pAmount.toLocaleString('en-IN')} from ${pPartyName}`, newPayment._id, undefined, newPayment);
 
     return res.json({
       success: true,
-      message: `Payment of ₹${pAmount.toLocaleString('en-IN')} recorded successfully.`,
+      message: `Payment receipt ${paymentNumber} for ₹${pAmount.toLocaleString('en-IN')} recorded successfully.`,
       data: newPayment
     });
   } catch (err: any) {

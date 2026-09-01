@@ -235,14 +235,21 @@ export const PaymentsView: React.FC = () => {
     const res = await api.post('/payments', {
       ...formData,
       customerId: inv.customerId,
+      partyId: inv.customerId,
       customerName: inv.customerName,
-      invoiceNumber: inv.invoiceNumber
+      partyName: inv.customerName,
+      invoiceNumber: inv.invoiceNumber,
+      paymentMode: formData.paymentMethod,
+      transactionReference: formData.referenceNumber,
+      date: formData.paymentDate
     });
 
     if (res.success) {
       alert(res.message);
       setIsModalOpen(false);
       fetchData();
+    } else {
+      alert(res.message || 'Failed to record payment');
     }
   };
 
@@ -275,16 +282,16 @@ export const PaymentsView: React.FC = () => {
               {payments.map(pay => (
                 <tr key={pay._id} className="hover:bg-slate-50/70">
                   <td className="px-6 py-4 font-bold text-blue-600 font-mono">{pay.paymentNumber}</td>
-                  <td className="px-6 py-4 font-bold text-slate-900">{pay.customerName}</td>
+                  <td className="px-6 py-4 font-bold text-slate-900">{pay.customerName || (pay as any).partyName || 'Valued Customer'}</td>
                   <td className="px-6 py-4 font-mono text-slate-600">{pay.invoiceNumber || 'Direct Deposit'}</td>
-                  <td className="px-6 py-4 font-bold text-emerald-600 text-sm">₹{pay.amount.toLocaleString('en-IN')}</td>
+                  <td className="px-6 py-4 font-bold text-emerald-600 text-sm">₹{Number(pay.amount || 0).toLocaleString('en-IN')}</td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-0.5 bg-slate-100 rounded-md font-semibold text-[11px]">
-                      {pay.paymentMethod}
+                      {pay.paymentMethod || (pay as any).paymentMode || 'BANK'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-mono text-slate-500">{pay.referenceNumber || 'N/A'}</td>
-                  <td className="px-6 py-4 text-slate-500">{pay.paymentDate}</td>
+                  <td className="px-6 py-4 font-mono text-slate-500">{pay.referenceNumber || (pay as any).transactionReference || 'N/A'}</td>
+                  <td className="px-6 py-4 text-slate-500">{pay.paymentDate || (pay as any).date || '—'}</td>
                 </tr>
               ))}
             </tbody>

@@ -40,7 +40,9 @@ import {
   Bell,
   CheckSquare,
   Clock,
-  Award
+  Award,
+  Compass,
+  MapPin
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -171,6 +173,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, 
       isDropdown: false,
       items: [
         { id: 'employees', label: 'Employees', icon: User, permission: 'employees.view' },
+        { id: 'live_tracking', label: 'Live Tracking', icon: Compass, permission: 'employee_tracking.view_live', badge: 'Live' },
         { id: 'leave_requests', label: 'Leave Requests', icon: CalendarDays, permission: 'employees.view' },
         { id: 'attendance', label: 'Attendance', icon: UserCheck, permission: 'attendance.view' },
         { id: 'salary', label: 'Salary', icon: CalendarDays, permission: 'salary.view' },

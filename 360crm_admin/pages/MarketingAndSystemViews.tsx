@@ -35,7 +35,14 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
-  Radio
+  Radio,
+  FileText,
+  Terminal,
+  ExternalLink,
+  Code,
+  Pause,
+  CreditCard,
+  Smartphone
 } from 'lucide-react';
 
 // ==========================================
@@ -442,7 +449,7 @@ export const ReportsHubView: React.FC = () => {
 };
 
 // ==========================================
-// 5. INTEGRATIONS VIEW (With Add, Edit, Delete, Test & Sync)
+// 5. ENTERPRISE INTEGRATIONS & API GATEWAYS VIEW
 // ==========================================
 export const IntegrationsView: React.FC = () => {
   const [integrations, setIntegrations] = useState<any[]>([]);
@@ -450,35 +457,74 @@ export const IntegrationsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
 
-  // Modals state
+  // Modal & Tab States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<'GENERAL' | 'CREDENTIALS' | 'MAPPING' | 'SCHEDULE' | 'TEST'>('GENERAL');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<any | null>(null);
+
+  // Execution Logs Modal
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [activeLogIntegration, setActiveLogIntegration] = useState<any | null>(null);
+  const [logsList, setLogsList] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   // Testing & Sync states
   const [testingId, setTestingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [testResult, setTestResult] = useState<{ id: string; success: boolean; message: string; latency?: number } | null>(null);
+  const [testResult, setTestResult] = useState<{ id: string; success: boolean; message: string; latency?: number; sampleData?: any } | null>(null);
+  const [modalTestResult, setModalTestResult] = useState<{ success: boolean; message: string; latency?: number; sampleData?: any } | null>(null);
+  const [isModalTesting, setIsModalTesting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Form State
   const initialFormState = {
     name: '',
-    code: 'custom_api',
+    code: 'custom_rest_api',
+    provider: 'Custom REST',
     category: 'CUSTOM',
+    connectionMode: 'POLLING',
     status: 'ACTIVE',
     endpointUrl: '',
-    method: 'POST',
+    method: 'GET',
     authType: 'API_KEY',
     apiKey: '',
     apiSecret: '',
-    syncFrequency: 'REALTIME',
+    webhookSecret: '',
+    syncFrequency: 'EVERY_5_MIN',
     description: '',
-    configJson: '{}'
+    fieldMappingJson: '{\n  "customer_name": "name",\n  "contact_number": "phone",\n  "email_address": "email",\n  "organization": "companyName",\n  "inquiry_notes": "requirement",\n  "location_city": "city"\n}',
+    config: {
+      userId: '',
+      profileId: '',
+      crmKey: '',
+      glusrMobile: '',
+      phoneNumberId: '',
+      businessAccountId: '',
+      verifyToken: '',
+      appSecret: '',
+      keyId: '',
+      keySecret: '',
+      publishableKey: '',
+      secretKey: '',
+      webhookSecret: '',
+      responseRootPath: 'data.leads',
+      paginationType: 'PAGE_NUMBER',
+      pageParam: 'page',
+      limitParam: 'limit',
+      limit: 50,
+      defaultSource: 'Inbound API',
+      defaultChannel: 'Enterprise Sync',
+      defaultPriority: 'MEDIUM',
+      autoAssignLead: false,
+      autoSettleInvoice: true,
+      initialSyncDaysBack: 7,
+      syncRespondedLeads: true
+    }
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -487,69 +533,157 @@ export const IntegrationsView: React.FC = () => {
   const integrationPresets = [
     {
       label: 'TradeIndia Lead Connector',
-      name: 'TradeIndia Lead Sync API',
+      name: 'TradeIndia Lead Sync Connector',
       code: 'tradeindia',
+      provider: 'TradeIndia',
       category: 'PORTAL',
-      endpointUrl: '/api/tradeindia/webhook',
-      method: 'POST',
-      authType: 'API_KEY',
-      syncFrequency: 'REALTIME',
-      description: 'Ingest B2B buyer leads directly into CRM pipeline via TradeIndia push webhook.'
-    },
-    {
-      label: 'IndiaMART Lead Sync API',
-      name: 'IndiaMART CRM Lead Gateway',
-      code: 'indiamart',
-      category: 'PORTAL',
-      endpointUrl: 'https://api.indiamart.com/v1/leads',
+      connectionMode: 'POLLING',
+      endpointUrl: 'https://www.tradeindia.com/utils/my_buy_leads.html',
       method: 'GET',
       authType: 'API_KEY',
       syncFrequency: 'EVERY_5_MIN',
-      description: 'Fetch new customer RFQs and inquiries from IndiaMART seller portal.'
+      description: 'Automated 5-minute background synchronization of TradeIndia Buy Leads directly into CRM pipeline.',
+      config: {
+        apiUrl: 'https://www.tradeindia.com/utils/my_buy_leads.html',
+        initialSyncDaysBack: 14,
+        syncRespondedLeads: true,
+        autoAssignLead: false,
+        defaultPriority: 'MEDIUM'
+      }
+    },
+    {
+      label: 'IndiaMART Lead Sync API',
+      name: 'IndiaMART Lead Sync API',
+      code: 'indiamart',
+      provider: 'IndiaMART',
+      category: 'PORTAL',
+      connectionMode: 'POLLING',
+      endpointUrl: 'https://mapi.indiamart.com/wservce/crm/crmListing/v2/',
+      method: 'GET',
+      authType: 'API_KEY',
+      syncFrequency: 'EVERY_5_MIN',
+      description: 'Synchronizes IndiaMART buyer enquiries, RFQs and direct messages automatically.',
+      config: {
+        apiUrl: 'https://mapi.indiamart.com/wservce/crm/crmListing/v2/',
+        autoAssignLead: false,
+        defaultPriority: 'MEDIUM',
+        initialSyncDaysBack: 7
+      }
     },
     {
       label: 'Website Lead Capture Webhook',
-      name: 'Corporate Website Form Hook',
+      name: 'Website Lead Capture Webhook',
       code: 'website_webhook',
+      provider: 'Website',
       category: 'WEBHOOK',
-      endpointUrl: '/api/website-leads',
+      connectionMode: 'WEBHOOK',
+      endpointUrl: '/api/webhooks/leads/int_3',
       method: 'POST',
       authType: 'WEBHOOK_SECRET',
       syncFrequency: 'REALTIME',
-      description: 'Receive contact and quote request forms from main marketing landing pages.'
+      description: 'Real-time JSON webhook endpoint for website landing pages, inquiry forms and lead generation funnels.',
+      fieldMapping: {
+        name: 'name',
+        full_name: 'name',
+        phone: 'phone',
+        mobile: 'phone',
+        email: 'email',
+        company: 'companyName',
+        requirement: 'requirement',
+        message: 'notes',
+        city: 'city',
+        budget: 'estimatedValue'
+      },
+      config: {
+        defaultSource: 'Website',
+        defaultChannel: 'Website Inbound',
+        defaultPriority: 'HIGH',
+        autoAssignLead: false
+      }
     },
     {
-      label: 'WhatsApp Cloud API Gateway',
-      name: 'Meta WhatsApp Business API',
+      label: 'Meta WhatsApp Cloud API Gateway',
+      name: 'Meta WhatsApp Cloud API Gateway',
       code: 'whatsapp',
+      provider: 'WhatsApp',
       category: 'COMMUNICATION',
-      endpointUrl: 'https://graph.facebook.com/v19.0/messages',
+      connectionMode: 'WEBHOOK',
+      endpointUrl: '/api/webhooks/whatsapp/int_4',
       method: 'POST',
       authType: 'BEARER_TOKEN',
       syncFrequency: 'REALTIME',
-      description: 'Automated invoice notifications, order tracking, and quotes via WhatsApp.'
+      description: 'Direct Meta WhatsApp Cloud API integration for inbound chats, automatic lead creation and message timeline logging.',
+      config: {
+        verifyToken: 'whatsapp_verify_token_360crm_2026',
+        defaultPriority: 'HIGH'
+      }
     },
     {
-      label: 'Razorpay / Stripe Payment Hook',
-      name: 'Payment Gateway Webhook',
+      label: 'Razorpay Payment Hook',
+      name: 'Razorpay Payment Gateway Hook',
       code: 'razorpay',
+      provider: 'Razorpay',
       category: 'PAYMENT',
-      endpointUrl: '/api/payments/webhook',
+      connectionMode: 'WEBHOOK',
+      endpointUrl: '/api/webhooks/razorpay/int_5',
       method: 'POST',
       authType: 'WEBHOOK_SECRET',
       syncFrequency: 'REALTIME',
-      description: 'Sync payment captures, UPI payments, and bank settlements into accounts.'
+      description: 'Processes payment.captured, order.paid and refunds to automatically settle CRM Invoices and log Payments.',
+      config: {
+        autoSettleInvoice: true
+      }
+    },
+    {
+      label: 'Stripe Payment Hook',
+      name: 'Stripe Global Payment Hook',
+      code: 'stripe',
+      provider: 'Stripe',
+      category: 'PAYMENT',
+      connectionMode: 'WEBHOOK',
+      endpointUrl: '/api/webhooks/stripe/int_6',
+      method: 'POST',
+      authType: 'WEBHOOK_SECRET',
+      syncFrequency: 'REALTIME',
+      description: 'Ingests Stripe payment_intent.succeeded and checkout.session.completed to update Accounts & Finance in CRM.',
+      config: {
+        autoSettleInvoice: true
+      }
     },
     {
       label: 'Custom REST API Connector',
-      name: 'Custom Enterprise ERP API',
+      name: 'Custom ERP / External CRM REST Connector',
       code: 'custom_rest_api',
+      provider: 'Custom REST',
       category: 'CUSTOM',
-      endpointUrl: 'https://api.shivshakti-erp.com/v1/sync',
-      method: 'POST',
+      connectionMode: 'POLLING',
+      endpointUrl: 'https://api.shivshakti-erp.com/v1/inbound-leads',
+      method: 'GET',
       authType: 'API_KEY',
       syncFrequency: 'HOURLY',
-      description: 'Bi-directional synchronization with external warehouse or accounting tools.'
+      description: 'Configurable REST polling connector with dynamic JSON response mapping, custom headers, and pagination.',
+      fieldMapping: {
+        id: 'externalLeadId',
+        customer_name: 'name',
+        contact_number: 'phone',
+        email_address: 'email',
+        organization: 'companyName',
+        product_interest: 'productName',
+        inquiry_notes: 'requirement',
+        location_city: 'city',
+        estimated_deal_value: 'estimatedValue'
+      },
+      config: {
+        responseRootPath: 'data.leads',
+        paginationType: 'PAGE_NUMBER',
+        pageParam: 'page',
+        limitParam: 'limit',
+        limit: 50,
+        defaultSource: 'Custom REST API',
+        defaultChannel: 'Enterprise Sync',
+        defaultPriority: 'MEDIUM',
+        autoAssignLead: false
+      }
     }
   ];
 
@@ -570,26 +704,64 @@ export const IntegrationsView: React.FC = () => {
     setIsEditing(false);
     setEditingId(null);
     setFormData(initialFormState);
+    setModalTab('GENERAL');
     setShowApiKey(false);
+    setModalTestResult(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (int: any) => {
     setIsEditing(true);
     setEditingId(int._id);
+    setModalTab('GENERAL');
+    setModalTestResult(null);
+
+    const cfg = int.config || {};
+    const effectiveApiKey = int.apiKey || cfg.apiKey || cfg.key || cfg.crmKey || cfg.accessToken || '';
+
     setFormData({
       name: int.name || '',
-      code: int.code || 'custom_api',
+      code: int.code || 'custom_rest_api',
+      provider: int.provider || int.name,
       category: int.category || 'CUSTOM',
+      connectionMode: int.connectionMode || 'POLLING',
       status: int.status || 'ACTIVE',
       endpointUrl: int.endpointUrl || '',
-      method: int.method || 'POST',
+      method: int.method || 'GET',
       authType: int.authType || 'API_KEY',
-      apiKey: int.apiKey || '',
-      apiSecret: int.apiSecret || '',
-      syncFrequency: int.syncFrequency || 'REALTIME',
+      apiKey: effectiveApiKey,
+      apiSecret: int.apiSecret || cfg.apiSecret || cfg.keySecret || cfg.secretKey || '',
+      webhookSecret: int.webhookSecret || cfg.webhookSecret || cfg.verifyToken || '',
+      syncFrequency: int.syncFrequency || 'EVERY_5_MIN',
       description: int.description || '',
-      configJson: JSON.stringify(int.config || {}, null, 2)
+      fieldMappingJson: JSON.stringify(int.fieldMapping || {}, null, 2),
+      config: {
+        userId: cfg.userId || cfg.userid || '',
+        profileId: cfg.profileId || cfg.profile_id || '',
+        crmKey: cfg.crmKey || '',
+        glusrMobile: cfg.glusrMobile || '',
+        phoneNumberId: cfg.phoneNumberId || '',
+        businessAccountId: cfg.businessAccountId || '',
+        verifyToken: cfg.verifyToken || int.webhookSecret || '',
+        appSecret: cfg.appSecret || '',
+        keyId: cfg.keyId || '',
+        keySecret: cfg.keySecret || '',
+        publishableKey: cfg.publishableKey || '',
+        secretKey: cfg.secretKey || '',
+        webhookSecret: cfg.webhookSecret || int.webhookSecret || '',
+        responseRootPath: cfg.responseRootPath || 'data.leads',
+        paginationType: cfg.paginationType || 'PAGE_NUMBER',
+        pageParam: cfg.pageParam || 'page',
+        limitParam: cfg.limitParam || 'limit',
+        limit: cfg.limit || 50,
+        defaultSource: cfg.defaultSource || int.name,
+        defaultChannel: cfg.defaultChannel || 'Enterprise Sync',
+        defaultPriority: cfg.defaultPriority || 'MEDIUM',
+        autoAssignLead: cfg.autoAssignLead !== false,
+        autoSettleInvoice: cfg.autoSettleInvoice !== false,
+        initialSyncDaysBack: cfg.initialSyncDaysBack || 7,
+        syncRespondedLeads: cfg.syncRespondedLeads !== false
+      }
     });
     setShowApiKey(false);
     setIsModalOpen(true);
@@ -600,12 +772,19 @@ export const IntegrationsView: React.FC = () => {
       ...prev,
       name: preset.name,
       code: preset.code,
+      provider: preset.provider,
       category: preset.category,
+      connectionMode: preset.connectionMode,
       endpointUrl: preset.endpointUrl,
       method: preset.method,
       authType: preset.authType,
       syncFrequency: preset.syncFrequency,
-      description: preset.description
+      description: preset.description,
+      fieldMappingJson: JSON.stringify(preset.fieldMapping || {}, null, 2),
+      config: {
+        ...prev.config,
+        ...(preset.config || {})
+      }
     }));
   };
 
@@ -613,33 +792,75 @@ export const IntegrationsView: React.FC = () => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    let parsedConfig = {};
+    let parsedFieldMapping = {};
     try {
-      if (formData.configJson && formData.configJson.trim()) {
-        parsedConfig = JSON.parse(formData.configJson);
+      if (formData.fieldMappingJson && formData.fieldMappingJson.trim()) {
+        parsedFieldMapping = JSON.parse(formData.fieldMappingJson);
       }
-    } catch (err) {
-      alert('Invalid JSON in Configuration parameters. Please correct it before saving.');
+    } catch {
+      alert('Invalid JSON in Field Mapping. Please check JSON syntax.');
       return;
     }
+
+    const mergedConfig = {
+      ...formData.config,
+      ...(formData.code === 'tradeindia' ? {
+        userId: formData.config.userId,
+        profileId: formData.config.profileId,
+        apiKey: formData.apiKey,
+        initialSyncDaysBack: formData.config.initialSyncDaysBack,
+        syncRespondedLeads: formData.config.syncRespondedLeads
+      } : {}),
+      ...(formData.code === 'indiamart' ? {
+        crmKey: formData.apiKey || formData.config.crmKey,
+        glusrMobile: formData.config.glusrMobile,
+        initialSyncDaysBack: formData.config.initialSyncDaysBack
+      } : {}),
+      ...(formData.code === 'whatsapp' ? {
+        phoneNumberId: formData.config.phoneNumberId,
+        businessAccountId: formData.config.businessAccountId,
+        accessToken: formData.apiKey,
+        verifyToken: formData.webhookSecret || formData.config.verifyToken,
+        appSecret: formData.config.appSecret
+      } : {}),
+      ...(formData.code === 'razorpay' ? {
+        keyId: formData.apiKey || formData.config.keyId,
+        keySecret: formData.apiSecret || formData.config.keySecret,
+        webhookSecret: formData.webhookSecret || formData.config.webhookSecret,
+        autoSettleInvoice: formData.config.autoSettleInvoice
+      } : {}),
+      ...(formData.code === 'stripe' ? {
+        publishableKey: formData.apiKey || formData.config.publishableKey,
+        secretKey: formData.apiSecret || formData.config.secretKey,
+        webhookSecret: formData.webhookSecret || formData.config.webhookSecret,
+        autoSettleInvoice: formData.config.autoSettleInvoice
+      } : {})
+    };
 
     const payload = {
       name: formData.name,
       code: formData.code,
+      provider: formData.provider,
       category: formData.category,
+      connectionMode: formData.connectionMode,
       status: formData.status,
       endpointUrl: formData.endpointUrl,
       method: formData.method,
       authType: formData.authType,
       apiKey: formData.apiKey,
       apiSecret: formData.apiSecret,
+      webhookSecret: formData.webhookSecret,
       syncFrequency: formData.syncFrequency,
       description: formData.description,
-      config: parsedConfig
+      config: mergedConfig,
+      fieldMapping: parsedFieldMapping
     };
 
     if (isEditing && editingId) {
       const res = await api.put(`/integrations/${editingId}`, payload);
+      if (formData.code === 'tradeindia') {
+        await api.post('/integrations/tradeindia/config', { ...mergedConfig, apiKey: formData.apiKey });
+      }
       if (res.success) {
         setActionMessage(`Integration '${formData.name}' updated successfully!`);
         setTimeout(() => setActionMessage(null), 4000);
@@ -650,6 +871,9 @@ export const IntegrationsView: React.FC = () => {
       }
     } else {
       const res = await api.post('/integrations', payload);
+      if (formData.code === 'tradeindia') {
+        await api.post('/integrations/tradeindia/config', { ...mergedConfig, apiKey: formData.apiKey });
+      }
       if (res.success) {
         setActionMessage(`New API connector '${formData.name}' registered successfully!`);
         setTimeout(() => setActionMessage(null), 4000);
@@ -690,7 +914,8 @@ export const IntegrationsView: React.FC = () => {
         id,
         success: true,
         message: res.message || 'Connection handshake successful! HTTP 200 OK',
-        latency: res.data?.latencyMs || 54
+        latency: res.data?.latencyMs || 54,
+        sampleData: res.data?.sampleData
       });
       fetchIntegrations();
     } else {
@@ -701,6 +926,53 @@ export const IntegrationsView: React.FC = () => {
         latency: 0
       });
       fetchIntegrations();
+    }
+  };
+
+  const handleModalTestPreview = async () => {
+    setIsModalTesting(true);
+    setModalTestResult(null);
+
+    let parsedFieldMapping = {};
+    try {
+      if (formData.fieldMappingJson && formData.fieldMappingJson.trim()) {
+        parsedFieldMapping = JSON.parse(formData.fieldMappingJson);
+      }
+    } catch {}
+
+    const payload = {
+      _id: editingId || undefined,
+      name: formData.name,
+      code: formData.code,
+      provider: formData.provider,
+      category: formData.category,
+      connectionMode: formData.connectionMode,
+      endpointUrl: formData.endpointUrl,
+      method: formData.method,
+      authType: formData.authType,
+      apiKey: formData.apiKey,
+      apiSecret: formData.apiSecret,
+      webhookSecret: formData.webhookSecret,
+      config: formData.config,
+      fieldMapping: parsedFieldMapping
+    };
+
+    const res = await api.post('/integrations/custom-rest/preview', payload);
+    setIsModalTesting(false);
+
+    if (res.success) {
+      setModalTestResult({
+        success: true,
+        message: res.message || 'Connection verified and records previewed successfully!',
+        latency: res.latencyMs || 45,
+        sampleData: res.data
+      });
+    } else {
+      setModalTestResult({
+        success: false,
+        message: res.message || 'Connection test failed',
+        latency: 0
+      });
     }
   };
 
@@ -717,6 +989,19 @@ export const IntegrationsView: React.FC = () => {
     }
   };
 
+  const handleOpenLogs = async (int: any) => {
+    setActiveLogIntegration(int);
+    setIsLogsModalOpen(true);
+    setLogsLoading(true);
+    const res = await api.get(`/integrations/${int._id}/logs?limit=40`);
+    if (res.success && res.data) {
+      setLogsList(res.data);
+    } else {
+      setLogsList([]);
+    }
+    setLogsLoading(false);
+  };
+
   const handleCopyEndpoint = (id: string, url: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
@@ -724,8 +1009,9 @@ export const IntegrationsView: React.FC = () => {
   };
 
   const handleToggleStatus = async (int: any) => {
-    const newStatus = int.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    const res = await api.put(`/integrations/${int._id}`, { status: newStatus });
+    const isPaused = int.status === 'PAUSED' || int.status === 'INACTIVE';
+    const action = isPaused ? 'activate' : 'pause';
+    const res = await api.post(`/integrations/${int._id}/${action}`, {});
     if (res.success) {
       fetchIntegrations();
     }
@@ -733,7 +1019,7 @@ export const IntegrationsView: React.FC = () => {
 
   // Filtered integrations
   const filteredIntegrations = integrations.filter(int => {
-    const matchesCategory = filterCategory === 'ALL' || int.category === filterCategory || (filterCategory === 'PORTAL' && (int.code === 'tradeindia' || int.code === 'indiamart'));
+    const matchesCategory = filterCategory === 'ALL' || int.category === filterCategory;
     const matchesSearch =
       int.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       int.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -746,6 +1032,7 @@ export const IntegrationsView: React.FC = () => {
   const totalConnectors = integrations.length;
   const activeConnectors = integrations.filter(i => i.status === 'ACTIVE').length;
   const totalIngestedEvents = integrations.reduce((acc, curr) => acc + (curr.totalSyncedEvents || 0), 0);
+  const totalCreatedLeads = integrations.reduce((acc, curr) => acc + (curr.totalCreated || 0), 0);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -766,9 +1053,16 @@ export const IntegrationsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
           title="Enterprise Connectors & API Gateways"
-          subtitle="Manage external B2B portal integrations, webhooks, WhatsApp Cloud API and accounting synchronization"
+          subtitle="Production-grade integrations for B2B portals (TradeIndia, IndiaMART), Webhooks, WhatsApp Cloud API, and Payments"
         />
         <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => handleOpenLogs({ _id: 'all', name: 'All Enterprise Integrations' })}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs font-bold transition-all flex items-center gap-2 shadow-2xs"
+          >
+            <Terminal className="w-3.5 h-3.5 text-slate-600" />
+            <span>Audit Logs</span>
+          </button>
           <button
             onClick={fetchIntegrations}
             disabled={loading}
@@ -814,7 +1108,7 @@ export const IntegrationsView: React.FC = () => {
             <Zap className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Synced Events</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ingested Leads / Events</div>
             <div className="text-xl font-black text-slate-900">{totalIngestedEvents.toLocaleString()} Events</div>
           </div>
         </div>
@@ -824,8 +1118,8 @@ export const IntegrationsView: React.FC = () => {
             <Radio className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Gateway Health</div>
-            <div className="text-xl font-black text-slate-900">99.9% Uptime</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Engine Scheduler</div>
+            <div className="text-xl font-black text-slate-900">Active (60s tick)</div>
           </div>
         </div>
       </div>
@@ -835,10 +1129,10 @@ export const IntegrationsView: React.FC = () => {
         {/* Category Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 text-xs">
           {[
-            { id: 'ALL', label: 'All APIs' },
+            { id: 'ALL', label: 'All Gateways' },
             { id: 'PORTAL', label: 'B2B Portals' },
             { id: 'WEBHOOK', label: 'Webhooks' },
-            { id: 'COMMUNICATION', label: 'WhatsApp / SMS' },
+            { id: 'COMMUNICATION', label: 'WhatsApp' },
             { id: 'PAYMENT', label: 'Payments' },
             { id: 'CUSTOM', label: 'Custom REST' }
           ].map(tab => (
@@ -863,7 +1157,7 @@ export const IntegrationsView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search API by name or URL..."
+            placeholder="Search connector name or URL..."
             className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 font-medium"
           />
         </div>
@@ -876,6 +1170,7 @@ export const IntegrationsView: React.FC = () => {
           const isSyncing = syncingId === int._id;
           const isCopied = copiedId === int._id;
           const currentTest = testResult?.id === int._id ? testResult : null;
+          const isWebhook = int.connectionMode === 'WEBHOOK' || int.category === 'WEBHOOK' || int.code === 'website_webhook' || int.code === 'razorpay' || int.code === 'stripe' || int.code === 'whatsapp';
 
           return (
             <div
@@ -899,12 +1194,25 @@ export const IntegrationsView: React.FC = () => {
                         ? 'bg-indigo-50 text-indigo-600'
                         : 'bg-amber-50 text-amber-600'
                     }`}>
-                      <Plug className="w-5 h-5" />
+                      {int.code === 'whatsapp' ? (
+                        <Smartphone className="w-5 h-5" />
+                      ) : int.category === 'PAYMENT' ? (
+                        <CreditCard className="w-5 h-5" />
+                      ) : isWebhook ? (
+                        <Zap className="w-5 h-5" />
+                      ) : (
+                        <Plug className="w-5 h-5" />
+                      )}
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
-                        {int.category || 'API'}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
+                          {int.category || 'API'}
+                        </span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono">
+                          {int.connectionMode || (isWebhook ? 'WEBHOOK' : 'POLLING')}
+                        </span>
+                      </div>
                       <h4 className="text-sm font-bold text-slate-900 mt-1 leading-snug">{int.name}</h4>
                     </div>
                   </div>
@@ -931,10 +1239,10 @@ export const IntegrationsView: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-100 text-blue-700 font-mono shrink-0">
-                        {int.method || 'POST'}
+                        {int.method || (isWebhook ? 'POST' : 'GET')}
                       </span>
-                      <span className="text-slate-700 font-mono truncate text-[10px]">
-                        {int.endpointUrl || '/api/custom-webhook'}
+                      <span className="text-slate-700 font-mono truncate text-[10px]" title={int.endpointUrl}>
+                        {int.endpointUrl || (isWebhook ? `/api/webhooks/leads/${int._id}` : 'https://api.external.com')}
                       </span>
                     </div>
                     {int.endpointUrl && (
@@ -952,29 +1260,59 @@ export const IntegrationsView: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/50 text-slate-600">
                     <div className="flex items-center gap-1.5 truncate">
                       <Key className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{int.authType || 'API_KEY'}</span>
+                      <span className="truncate">{int.authType || (isWebhook ? 'WEBHOOK_SECRET' : 'API_KEY')}</span>
                     </div>
                     <div className="flex items-center gap-1.5 truncate justify-end">
                       <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate capitalize">{(int.syncFrequency || 'Realtime').toLowerCase().replace('_', ' ')}</span>
+                      <span className="truncate capitalize">{(int.syncFrequency || 'Realtime').toLowerCase().replace(/_/g, ' ')}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Telemetry Stats Box */}
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 text-[11px] space-y-1.5 text-slate-600">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 text-[11px] space-y-2 text-slate-600">
                   <div className="flex justify-between items-center">
-                    <span>Total Ingested Events:</span>
-                    <span className="font-black text-slate-900 font-mono bg-white px-2 py-0.5 rounded-md border border-slate-200/60">
-                      {int.totalSyncedEvents || 0}
+                    <span className="text-slate-500 font-medium">Last Synchronized:</span>
+                    <span className="text-slate-800 font-semibold text-[10px]">
+                      {int.lastSyncedAt ? new Date(int.lastSyncedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never'}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>Last Sync Timestamp:</span>
-                    <span className="text-slate-500 text-[10px]">
-                      {int.lastSyncedAt ? new Date(int.lastSyncedAt).toLocaleString() : 'Never'}
+
+                  {int.lastSyncResult ? (
+                    <div className="grid grid-cols-4 gap-1 pt-1.5 pb-0.5 border-t border-slate-200/50 text-center font-mono">
+                      <div className="bg-white p-1 rounded-lg border border-slate-200/60">
+                        <div className="text-[9px] text-slate-400 font-sans">Fetched</div>
+                        <div className="font-bold text-slate-800">{int.lastSyncResult.fetched}</div>
+                      </div>
+                      <div className="bg-emerald-50/70 p-1 rounded-lg border border-emerald-200/50">
+                        <div className="text-[9px] text-emerald-600 font-sans">Created</div>
+                        <div className="font-bold text-emerald-700">{int.lastSyncResult.created}</div>
+                      </div>
+                      <div className="bg-blue-50/70 p-1 rounded-lg border border-blue-200/50">
+                        <div className="text-[9px] text-blue-600 font-sans">Updated</div>
+                        <div className="font-bold text-blue-700">{int.lastSyncResult.updated}</div>
+                      </div>
+                      <div className="bg-rose-50/70 p-1 rounded-lg border border-rose-200/50">
+                        <div className="text-[9px] text-rose-600 font-sans">Failed</div>
+                        <div className="font-bold text-rose-700">{int.lastSyncResult.failed}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span>Total Synced Events:</span>
+                      <span className="font-black text-slate-900 font-mono bg-white px-2 py-0.5 rounded-md border border-slate-200/60">
+                        {int.totalSyncedEvents || 0}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200/50 text-[10px]">
+                    <span className="text-slate-500">Next Auto-Run:</span>
+                    <span className="font-semibold text-slate-700 font-mono">
+                      {isWebhook ? 'Instant On Inbound' : (int.nextSyncAt ? new Date(int.nextSyncAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Every 5 mins')}
                     </span>
                   </div>
+
                   {int.lastTestStatus && (
                     <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
                       <span>Gateway Health:</span>
@@ -984,7 +1322,7 @@ export const IntegrationsView: React.FC = () => {
                         <span className={`w-1.5 h-1.5 rounded-full ${
                           int.lastTestStatus === 'SUCCESS' ? 'bg-emerald-500' : 'bg-amber-500'
                         }`} />
-                        {int.lastTestStatus === 'SUCCESS' ? 'Validated (200 OK)' : 'Pending Check'}
+                        {int.lastTestStatus === 'SUCCESS' ? 'Operational & Ready' : 'Warning / Error'}
                       </span>
                     </div>
                   )}
@@ -1006,29 +1344,41 @@ export const IntegrationsView: React.FC = () => {
                 )}
               </div>
 
-              {/* Action Buttons: Test, Sync, Edit, Delete */}
+              {/* Action Buttons: Test, Sync, Logs, Edit, Delete */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5">
                   {/* Test Connection Button */}
                   <button
                     onClick={() => handleTestConnection(int._id, int.name)}
-                    disabled={isTesting}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    disabled={isTesting || isSyncing}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-60"
                     title="Ping and test API connection"
                   >
                     <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-blue-600' : 'text-slate-600'}`} />
                     <span>{isTesting ? 'Testing...' : 'Test'}</span>
                   </button>
 
-                  {/* Manual Sync Button */}
+                  {/* Manual Sync Button for Polling connectors */}
+                  {!isWebhook && (
+                    <button
+                      onClick={() => handleManualSync(int._id)}
+                      disabled={isSyncing || isTesting}
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-60"
+                      title="Trigger immediate synchronization"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
+                    </button>
+                  )}
+
+                  {/* Logs Button */}
                   <button
-                    onClick={() => handleManualSync(int._id)}
-                    disabled={isSyncing}
-                    className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                    title="Trigger immediate sync"
+                    onClick={() => handleOpenLogs(int)}
+                    className="px-2 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium flex items-center gap-1"
+                    title="View execution logs"
                   >
-                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+                    <FileText className="w-3 h-3" />
+                    <span>Logs</span>
                   </button>
                 </div>
 
@@ -1079,20 +1429,20 @@ export const IntegrationsView: React.FC = () => {
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* MODAL: ADD / EDIT API CONNECTOR           */}
-      {/* ========================================== */}
+      {/* ========================================================================= */}
+      {/* MODAL: ADAPTIVE STEP-BY-STEP ADD / EDIT CONNECTOR                          */}
+      {/* ========================================================================= */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={isEditing ? `Edit API Connector: ${formData.name}` : 'Connect New Enterprise API'}
+        title={isEditing ? `Configure Connector: ${formData.name}` : 'Connect New Enterprise API'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div className="space-y-4 text-xs">
           {/* Quick Presets Picker (Only shown when adding new) */}
           {!isEditing && (
             <div className="space-y-1.5 pb-3 border-b border-slate-100">
               <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-                Quick Select Integration Template:
+                Select Integration Template:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {integrationPresets.map(preset => (
@@ -1100,7 +1450,11 @@ export const IntegrationsView: React.FC = () => {
                     key={preset.code}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className="p-2 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 text-left transition-all group"
+                    className={`p-2 rounded-xl border text-left transition-all group ${
+                      formData.code === preset.code
+                        ? 'border-blue-600 bg-blue-50/70 shadow-xs'
+                        : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
+                    }`}
                   >
                     <div className="font-bold text-slate-800 text-[11px] group-hover:text-blue-600 truncate">{preset.label}</div>
                     <div className="text-[9px] text-slate-400 uppercase font-mono">{preset.category}</div>
@@ -1110,196 +1464,748 @@ export const IntegrationsView: React.FC = () => {
             </div>
           )}
 
-          {/* Row 1: Name & Provider Code */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">API / Connector Name *</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. IndiaMART Lead Ingestion API"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-medium text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Provider Code / Identifier *</label>
-              <input
-                type="text"
-                required
-                value={formData.code}
-                onChange={e => setFormData({ ...formData, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                placeholder="e.g. indiamart_api"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-mono text-xs"
-              />
-            </div>
+          {/* Modal Tab Navigation */}
+          <div className="flex items-center gap-1 border-b border-slate-200 pb-1">
+            {[
+              { id: 'GENERAL', label: '1. General' },
+              { id: 'CREDENTIALS', label: '2. Credentials & Auth' },
+              { id: 'MAPPING', label: '3. Data Mapping' },
+              { id: 'SCHEDULE', label: '4. Scheduler' },
+              { id: 'TEST', label: '5. Test & Verify' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setModalTab(tab.id as any)}
+                className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+                  modalTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Row 2: Category & Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Integration Category</label>
-              <select
-                value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
-              >
-                <option value="PORTAL">B2B Portal (TradeIndia, IndiaMART)</option>
-                <option value="WEBHOOK">Webhook (Website Leads, Custom Webhooks)</option>
-                <option value="COMMUNICATION">Communication (WhatsApp Cloud, SMS)</option>
-                <option value="PAYMENT">Payment Gateway (Razorpay, Stripe)</option>
-                <option value="CUSTOM">Custom REST API Connector</option>
-              </select>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* ======================================================== */}
+            {/* TAB 1: GENERAL SETTINGS                                  */}
+            {/* ======================================================== */}
+            {modalTab === 'GENERAL' && (
+              <div className="space-y-3 animate-in fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Connector Display Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g. TradeIndia Buy Lead Connector"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-medium text-xs"
+                    />
+                  </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Initial Status</label>
-              <select
-                value={formData.status}
-                onChange={e => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
-              >
-                <option value="ACTIVE">ACTIVE (Receiving / Polling Data)</option>
-                <option value="INACTIVE">INACTIVE (Disabled)</option>
-                <option value="CONFIGURED">CONFIGURED (Testing Mode)</option>
-              </select>
-            </div>
-          </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Provider Code / Unique Identifier *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.code}
+                      onChange={e => setFormData({ ...formData, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                      placeholder="e.g. tradeindia"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-mono text-xs"
+                    />
+                  </div>
+                </div>
 
-          {/* Row 3: Method & Endpoint URL */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="md:col-span-1">
-              <label className="block font-semibold text-slate-700 mb-1">HTTP Method</label>
-              <select
-                value={formData.method}
-                onChange={e => setFormData({ ...formData, method: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono text-xs"
-              >
-                <option value="POST">POST</option>
-                <option value="GET">GET</option>
-                <option value="PUT">PUT</option>
-                <option value="PATCH">PATCH</option>
-              </select>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
+                    >
+                      <option value="PORTAL">B2B Portal (TradeIndia, IndiaMART)</option>
+                      <option value="WEBHOOK">Webhook Ingestion</option>
+                      <option value="COMMUNICATION">Communication (WhatsApp)</option>
+                      <option value="PAYMENT">Payment Gateway (Razorpay, Stripe)</option>
+                      <option value="CUSTOM">Custom REST API</option>
+                    </select>
+                  </div>
 
-            <div className="md:col-span-3">
-              <label className="block font-semibold text-slate-700 mb-1">Endpoint URL / Webhook Path</label>
-              <input
-                type="text"
-                value={formData.endpointUrl}
-                onChange={e => setFormData({ ...formData, endpointUrl: e.target.value })}
-                placeholder="https://api.external-service.com/v1/leads or /api/webhook"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white"
-              />
-            </div>
-          </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Connection Mode</label>
+                    <select
+                      value={formData.connectionMode}
+                      onChange={e => setFormData({ ...formData, connectionMode: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
+                    >
+                      <option value="POLLING">Automated Polling (Scheduler)</option>
+                      <option value="WEBHOOK">Inbound Webhook (Push)</option>
+                      <option value="API">On-Demand API</option>
+                      <option value="HYBRID">Hybrid (Polling + Webhook)</option>
+                    </select>
+                  </div>
 
-          {/* Row 4: Auth Type & API Key / Token */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Authentication Method</label>
-              <select
-                value={formData.authType}
-                onChange={e => setFormData({ ...formData, authType: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
-              >
-                <option value="API_KEY">API Key Header (x-api-key)</option>
-                <option value="BEARER_TOKEN">Bearer Token (Authorization)</option>
-                <option value="WEBHOOK_SECRET">Webhook Secret Token</option>
-                <option value="BASIC_AUTH">Basic Auth (Username / Password)</option>
-                <option value="NO_AUTH">No Authentication / Public</option>
-              </select>
-            </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={e => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
+                    >
+                      <option value="ACTIVE">ACTIVE (Receiving Data)</option>
+                      <option value="INACTIVE">INACTIVE (Disabled)</option>
+                      <option value="CONFIGURED">CONFIGURED (Testing Mode)</option>
+                      <option value="PAUSED">PAUSED</option>
+                    </select>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                <span>API Key / Secret Token</span>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Description / Use Case Notes</label>
+                  <textarea
+                    rows={2}
+                    value={formData.description}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe what this integration achieves..."
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB 2: CREDENTIALS & AUTH (PROVIDER-ADAPTIVE)            */}
+            {/* ======================================================== */}
+            {modalTab === 'CREDENTIALS' && (
+              <div className="space-y-4 animate-in fade-in">
+                {/* TradeIndia Provider Form */}
+                {formData.code === 'tradeindia' && (
+                  <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Plug className="w-4 h-4 text-blue-600" />
+                      <span className="font-bold text-blue-900 text-xs">TradeIndia Direct Polling API Credentials</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">User ID (`userid`) *</label>
+                        <input
+                          type="text"
+                          value={formData.config.userId}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, userId: e.target.value } })}
+                          placeholder="e.g. TI_SHIV_SHAKTI_99"
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Profile ID (`profile_id`) *</label>
+                        <input
+                          type="text"
+                          value={formData.config.profileId}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, profileId: e.target.value } })}
+                          placeholder="e.g. 9876543"
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">API Key (`key`) *</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
+                          placeholder="ti_live_sec_..."
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Initial Sync Days Back</label>
+                        <input
+                          type="number"
+                          value={formData.config.initialSyncDaysBack}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, initialSyncDaysBack: Number(e.target.value) } })}
+                          className="w-full px-3 py-1.5 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pt-5">
+                        <input
+                          type="checkbox"
+                          id="syncRespondedLeads"
+                          checked={formData.config.syncRespondedLeads}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, syncRespondedLeads: e.target.checked } })}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="syncRespondedLeads" className="font-semibold text-slate-700 text-xs">
+                          Sync Responded Buy Leads Stream
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* IndiaMART Provider Form */}
+                {formData.code === 'indiamart' && (
+                  <div className="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Plug className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-emerald-900 text-xs">IndiaMART CRM Key & Credentials</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">IndiaMART CRM Key (`glusr_crm_key`) *</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey || formData.config.crmKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value, config: { ...formData.config, crmKey: e.target.value } })}
+                          placeholder="im_crm_key_..."
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">GLUSR Mobile Number (Optional)</label>
+                        <input
+                          type="text"
+                          value={formData.config.glusrMobile}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, glusrMobile: e.target.value } })}
+                          placeholder="9876543210"
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Website Lead Webhook Provider Form */}
+                {formData.code === 'website_webhook' && (
+                  <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-indigo-600" />
+                      <span className="font-bold text-indigo-900 text-xs">Website Webhook Endpoint & Security Token</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Webhook Endpoint Path</label>
+                        <input
+                          type="text"
+                          value={formData.endpointUrl}
+                          onChange={e => setFormData({ ...formData, endpointUrl: e.target.value })}
+                          placeholder="/api/webhooks/leads/int_3"
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Webhook Secret Token (Header: `x-webhook-secret`)</label>
+                        <input
+                          type="text"
+                          value={formData.webhookSecret}
+                          onChange={e => setFormData({ ...formData, webhookSecret: e.target.value })}
+                          placeholder="whsec_360crm_..."
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* WhatsApp Provider Form */}
+                {formData.code === 'whatsapp' && (
+                  <div className="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-emerald-900 text-xs">Meta WhatsApp Cloud API Credentials</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Phone Number ID *</label>
+                        <input
+                          type="text"
+                          value={formData.config.phoneNumberId}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, phoneNumberId: e.target.value } })}
+                          placeholder="109283746501928"
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Business Account ID</label>
+                        <input
+                          type="text"
+                          value={formData.config.businessAccountId}
+                          onChange={e => setFormData({ ...formData, config: { ...formData.config, businessAccountId: e.target.value } })}
+                          placeholder="992837162534"
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Cloud API Permanent Access Token</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
+                          placeholder="EAAO..."
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Meta Webhook Verify Token</label>
+                        <input
+                          type="text"
+                          value={formData.webhookSecret || formData.config.verifyToken}
+                          onChange={e => setFormData({ ...formData, webhookSecret: e.target.value, config: { ...formData.config, verifyToken: e.target.value } })}
+                          placeholder="whatsapp_verify_token_..."
+                          className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Razorpay Provider Form */}
+                {formData.code === 'razorpay' && (
+                  <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                      <span className="font-bold text-blue-900 text-xs">Razorpay Gateway API Keys & Webhook Secret</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Key ID *</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
+                          placeholder="rzp_live_..."
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Key Secret *</label>
+                        <input
+                          type="password"
+                          value={formData.apiSecret}
+                          onChange={e => setFormData({ ...formData, apiSecret: e.target.value })}
+                          placeholder="••••••••"
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Webhook Secret *</label>
+                        <input
+                          type="text"
+                          value={formData.webhookSecret}
+                          onChange={e => setFormData({ ...formData, webhookSecret: e.target.value })}
+                          placeholder="whsec_rzp_..."
+                          className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stripe Provider Form */}
+                {formData.code === 'stripe' && (
+                  <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-indigo-600" />
+                      <span className="font-bold text-indigo-900 text-xs">Stripe API Secret & Webhook Signing Secret</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Publishable Key</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
+                          placeholder="pk_live_..."
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Secret Key *</label>
+                        <input
+                          type="password"
+                          value={formData.apiSecret}
+                          onChange={e => setFormData({ ...formData, apiSecret: e.target.value })}
+                          placeholder="sk_live_..."
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Webhook Signing Secret *</label>
+                        <input
+                          type="text"
+                          value={formData.webhookSecret}
+                          onChange={e => setFormData({ ...formData, webhookSecret: e.target.value })}
+                          placeholder="whsec_..."
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom REST Generic Auth */}
+                {formData.code === 'custom_rest_api' && (
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Code className="w-4 h-4 text-slate-700" />
+                      <span className="font-bold text-slate-900 text-xs">Custom REST HTTP & Authentication Parameters</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Method</label>
+                        <select
+                          value={formData.method}
+                          onChange={e => setFormData({ ...formData, method: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold font-mono text-xs"
+                        >
+                          <option value="GET">GET</option>
+                          <option value="POST">POST</option>
+                          <option value="PUT">PUT</option>
+                          <option value="PATCH">PATCH</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="block font-semibold text-slate-700 mb-1">Target Endpoint URL *</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.endpointUrl}
+                          onChange={e => setFormData({ ...formData, endpointUrl: e.target.value })}
+                          placeholder="https://api.shivshakti-erp.com/v1/inbound-leads"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Auth Type</label>
+                        <select
+                          value={formData.authType}
+                          onChange={e => setFormData({ ...formData, authType: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-xs"
+                        >
+                          <option value="API_KEY">API Key Header (`x-api-key`)</option>
+                          <option value="BEARER_TOKEN">Bearer Token (Authorization)</option>
+                          <option value="BASIC_AUTH">Basic Auth</option>
+                          <option value="QUERY_PARAM">Query Parameter (`?api_key=...`)</option>
+                          <option value="NO_AUTH">No Authentication / Public</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block font-semibold text-slate-700 mb-1">API Key / Bearer Secret</label>
+                        <input
+                          type="text"
+                          value={formData.apiKey}
+                          onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
+                          placeholder="crm_sec_..."
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB 3: DATA MAPPING & DEFAULTS                           */}
+            {/* ======================================================== */}
+            {modalTab === 'MAPPING' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900 text-xs">Response Path & Field Translation Map</span>
+                    <span className="text-[10px] text-slate-400 font-mono">External JSON &rarr; CRM Fields</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Response Root Path (Dot Notation)</label>
+                    <input
+                      type="text"
+                      value={formData.config.responseRootPath}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, responseRootPath: e.target.value } })}
+                      placeholder="e.g. data.leads or results.records"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Field Mapping Definition (JSON)</label>
+                    <textarea
+                      rows={6}
+                      value={formData.fieldMappingJson}
+                      onChange={e => setFormData({ ...formData, fieldMappingJson: e.target.value })}
+                      placeholder={`{\n  "customer_name": "name",\n  "contact_number": "phone",\n  "email_address": "email"\n}`}
+                      className="w-full px-3.5 py-2 bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl font-mono text-[11px] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Default Source Tag</label>
+                    <input
+                      type="text"
+                      value={formData.config.defaultSource}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, defaultSource: e.target.value } })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Default Priority</label>
+                    <select
+                      value={formData.config.defaultPriority}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, defaultPriority: e.target.value } })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    >
+                      <option value="LOW">LOW</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="URGENT">URGENT</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="autoAssignLead"
+                      checked={formData.config.autoAssignLead}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, autoAssignLead: e.target.checked } })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="autoAssignLead" className="font-semibold text-slate-700 text-xs">
+                      Auto-assign to Sales Rep
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB 4: SCHEDULER & PAGINATION                            */}
+            {/* ======================================================== */}
+            {modalTab === 'SCHEDULE' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Synchronization Frequency</label>
+                    <select
+                      value={formData.syncFrequency}
+                      onChange={e => setFormData({ ...formData, syncFrequency: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
+                    >
+                      <option value="EVERY_5_MIN">Every 5 Minutes (Production Polling)</option>
+                      <option value="EVERY_15_MIN">Every 15 Minutes</option>
+                      <option value="EVERY_30_MIN">Every 30 Minutes</option>
+                      <option value="HOURLY">Hourly Batch Sync</option>
+                      <option value="DAILY">Daily Reconciliation</option>
+                      <option value="REALTIME">Real-time Push Webhook</option>
+                      <option value="MANUAL">Manual On-Demand Sync Only</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Pagination Strategy</label>
+                    <select
+                      value={formData.config.paginationType}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, paginationType: e.target.value } })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
+                    >
+                      <option value="PAGE_NUMBER">Page Number (`?page=1&limit=50`)</option>
+                      <option value="OFFSET">Offset (`?offset=0&limit=50`)</option>
+                      <option value="NO_PAGINATION">No Pagination (Single Payload)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Page Parameter Name</label>
+                    <input
+                      type="text"
+                      value={formData.config.pageParam}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, pageParam: e.target.value } })}
+                      placeholder="page"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Limit Parameter Name</label>
+                    <input
+                      type="text"
+                      value={formData.config.limitParam}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, limitParam: e.target.value } })}
+                      placeholder="limit"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Records Limit Per Page</label>
+                    <input
+                      type="number"
+                      value={formData.config.limit}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, limit: Number(e.target.value) } })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB 5: TEST & VERIFY PREVIEW                             */}
+            {/* ======================================================== */}
+            {modalTab === 'TEST' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs">Run Diagnostic Connectivity Test</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Executes a safe handshake and displays response headers & preview records.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleModalTestPreview}
+                      disabled={isModalTesting}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all disabled:opacity-60"
+                    >
+                      <Play className={`w-3.5 h-3.5 ${isModalTesting ? 'animate-spin' : ''}`} />
+                      <span>{isModalTesting ? 'Testing Handshake...' : 'Run Test Now'}</span>
+                    </button>
+                  </div>
+
+                  {modalTestResult && (
+                    <div className={`p-3 rounded-xl border text-xs space-y-2 ${
+                      modalTestResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'
+                    }`}>
+                      <div className="flex items-center gap-2 font-bold">
+                        {modalTestResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
+                        <span>{modalTestResult.success ? `Handshake Successful (${modalTestResult.latency}ms)` : 'Handshake Failed'}</span>
+                      </div>
+                      <p className="text-[11px]">{modalTestResult.message}</p>
+
+                      {modalTestResult.sampleData && (
+                        <div className="space-y-1 pt-2 border-t border-emerald-200/60">
+                          <span className="font-bold text-[10px] uppercase tracking-wider">Sample Extracted Records:</span>
+                          <pre className="p-2.5 bg-slate-900 text-emerald-400 rounded-xl font-mono text-[10px] overflow-x-auto max-h-40">
+                            {JSON.stringify(modalTestResult.sampleData, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Footer Submit Buttons */}
+            <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+              <div className="text-[11px] text-slate-400 font-medium">
+                {modalTab !== 'TEST' && (
+                  <span>Click 'Test & Verify' tab to validate before deploying</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="text-slate-400 hover:text-slate-600"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold transition-all text-xs"
                 >
-                  {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  Cancel
                 </button>
-              </label>
-              <input
-                type={showApiKey ? 'text' : 'password'}
-                value={formData.apiKey}
-                onChange={e => setFormData({ ...formData, apiKey: e.target.value })}
-                placeholder="sk_live_..."
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white"
-              />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/20 text-xs flex items-center gap-2"
+                >
+                  <Plug className="w-4 h-4" />
+                  <span>{isEditing ? 'Save & Deploy Changes' : 'Register & Activate Connector'}</span>
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Row 5: Sync Frequency */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Synchronization Frequency</label>
-            <select
-              value={formData.syncFrequency}
-              onChange={e => setFormData({ ...formData, syncFrequency: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs"
-            >
-              <option value="REALTIME">Real-time Push Webhook (Instant)</option>
-              <option value="EVERY_5_MIN">Every 5 Minutes (Automated Polling)</option>
-              <option value="HOURLY">Hourly Batch Sync</option>
-              <option value="DAILY">Daily Reconciliation</option>
-              <option value="MANUAL">Manual On-Demand Sync Only</option>
-            </select>
-          </div>
-
-          {/* Row 6: Description */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Description / Notes</label>
-            <textarea
-              rows={2}
-              value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Provide context on what this API syncs (e.g. Ingests TradeIndia seller inquiries)..."
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-            />
-          </div>
-
-          {/* Row 7: Configuration JSON */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span>Custom Headers & Config (JSON)</span>
-              <span className="text-[10px] text-slate-400 font-mono">Optional</span>
-            </label>
-            <textarea
-              rows={3}
-              value={formData.configJson}
-              onChange={e => setFormData({ ...formData, configJson: e.target.value })}
-              placeholder={`{\n  "autoAssignLead": true,\n  "notifySales": true\n}`}
-              className="w-full px-3.5 py-2 bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl font-mono text-[11px] focus:outline-hidden"
-            />
-          </div>
-
-          {/* Footer Submit Buttons */}
-          <div className="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold transition-all text-xs"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/20 text-xs flex items-center gap-2"
-            >
-              <Plug className="w-4 h-4" />
-              <span>{isEditing ? 'Save Changes' : 'Register API'}</span>
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </Modal>
 
-      {/* ========================================== */}
-      {/* MODAL: DELETE CONFIRMATION DIALOG          */}
-      {/* ========================================== */}
+      {/* ========================================================================= */}
+      {/* MODAL: EXECUTION & AUDIT LOGS VIEWER                                      */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isLogsModalOpen}
+        onClose={() => setIsLogsModalOpen(false)}
+        title={`Integration Execution Audit Logs: ${activeLogIntegration?.name || 'All'}`}
+      >
+        <div className="space-y-4 text-xs">
+          <div className="flex items-center justify-between text-slate-500 text-[11px]">
+            <span>Recent automated polling cycles and inbound webhook invocations:</span>
+            <button
+              onClick={() => handleOpenLogs(activeLogIntegration)}
+              disabled={logsLoading}
+              className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+            >
+              <RefreshCw className={`w-3 h-3 ${logsLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh Logs</span>
+            </button>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto rounded-2xl border border-slate-200 divide-y divide-slate-100">
+            {logsLoading ? (
+              <div className="p-8 text-center text-slate-400">Loading execution audit logs...</div>
+            ) : logsList.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">No execution logs recorded yet.</div>
+            ) : (
+              logsList.map((log: any) => (
+                <div key={log._id} className="p-3 bg-white hover:bg-slate-50/80 transition-colors space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+                        log.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {log.status}
+                      </span>
+                      <span className="font-bold text-slate-800 text-[11px]">{log.integrationName}</span>
+                      <span className="text-[10px] font-mono text-slate-400">[{log.triggerType}]</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {new Date(log.startedAt || log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-[10px] font-mono text-slate-600 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                    <div>Fetched: <strong className="text-slate-900">{log.fetched}</strong></div>
+                    <div>Created: <strong className="text-emerald-700">{log.created}</strong></div>
+                    <div>Updated: <strong className="text-blue-700">{log.updated}</strong></div>
+                    <div>Duration: <strong className="text-slate-900">{(Number(log.durationMs || 0) / 1000).toFixed(1)}s</strong></div>
+                  </div>
+
+                  {log.errorMessage && (
+                    <div className="text-[10px] text-rose-600 bg-rose-50 p-1.5 rounded font-mono">
+                      Error: {log.errorMessage}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL: DELETE CONFIRMATION DIALOG                                         */}
+      {/* ========================================================================= */}
       <Modal
         isOpen={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
@@ -1338,4 +2244,5 @@ export const IntegrationsView: React.FC = () => {
     </div>
   );
 };
+
 

@@ -5,10 +5,12 @@ import {
   UserDoc, RoleDoc, PermissionDoc, LeadDoc, CustomerDoc, ProductDoc, CategoryDoc,
   WarehouseDoc, SupplierDoc, PurchaseDoc, QuotationDoc, SalesOrderDoc,
   InvoiceDoc, PaymentDoc, ExpenseDoc, EmployeeDoc, AttendanceDoc,
-  SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc,
+  SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc, IntegrationLogDoc,
   AuditLogDoc, FollowUpDoc, StockTransactionDoc, CreditNoteDoc, CallLogDoc,
   LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc,
-  AttendanceSettingsDoc, OfficeLocation, ActivitySessionDoc, DeviceDoc, AttendanceBreak, VerificationStamp
+  AttendanceSettingsDoc, OfficeLocation, ActivitySessionDoc, DeviceDoc, AttendanceBreak, VerificationStamp,
+  LatestLocationDoc, LocationHistoryDoc, GeofenceDoc, GeofenceEventDoc, TrackingPolicyDoc,
+  DailyTrackingSummaryDoc, TrackingAlertDoc
 } from '../../360_backend/database/types';
 
 export type User = UserDoc;
@@ -33,6 +35,7 @@ export type Performance = PerformanceDoc;
 export type Campaign = CampaignDoc;
 export type LeadSource = LeadSourceDoc;
 export type Integration = IntegrationDoc;
+export type IntegrationLog = IntegrationLogDoc;
 export type AuditLog = AuditLogDoc;
 export type FollowUp = FollowUpDoc;
 export type StockTransaction = StockTransactionDoc;
@@ -47,3 +50,11 @@ export type AttendanceSettings = AttendanceSettingsDoc;
 export type OfficeLocationType = OfficeLocation;
 export type ActivitySession = ActivitySessionDoc;
 export type Device = DeviceDoc;
+export type LatestLocation = LatestLocationDoc;
+export type LocationHistory = LocationHistoryDoc;
+export type Geofence = GeofenceDoc;
+export type GeofenceEvent = GeofenceEventDoc;
+export type TrackingPolicy = TrackingPolicyDoc;
+export type DailyTrackingSummary = DailyTrackingSummaryDoc;
+export type TrackingAlert = TrackingAlertDoc;
+

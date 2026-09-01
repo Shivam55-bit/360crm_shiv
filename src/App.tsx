@@ -56,6 +56,7 @@ import { EmployeeSalaryView } from './../360crm_admin/pages/EmployeeSalaryView';
 import { EmployeeProfileView } from './../360crm_admin/pages/EmployeeProfileView';
 import { EmployeeNotificationsView } from './../360crm_admin/pages/EmployeeNotificationsView';
 import { HrDashboardView } from './../360crm_admin/pages/HrDashboardView';
+import { LiveTrackingView } from './../360crm_admin/pages/LiveTrackingView';
 
 // Super Admin Portal
 import { SuperAdminPortal } from './../360crm_superadmin/SuperAdminPortal';
@@ -197,6 +198,8 @@ export const AppContent: React.FC = () => {
       // People / HR Views
       case 'employees':
         return <EmployeesView />;
+      case 'live_tracking':
+        return <LiveTrackingView />;
       case 'leave_requests':
         return <LeaveRequestsView />;
       case 'attendance':

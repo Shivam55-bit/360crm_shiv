@@ -5,19 +5,72 @@ import {
   UserDoc, RoleDoc, PermissionDoc, LeadDoc, CustomerDoc, ProductDoc, CategoryDoc,
   WarehouseDoc, SupplierDoc, PurchaseDoc, QuotationDoc, SalesOrderDoc,
   InvoiceDoc, PaymentDoc, ExpenseDoc, EmployeeDoc, AttendanceDoc,
-  SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc,
+  SalaryDoc, PerformanceDoc, CampaignDoc, LeadSourceDoc, IntegrationDoc, IntegrationLogDoc,
   AuditLogDoc, FollowUpDoc, StockTransactionDoc, CreditNoteDoc, CallLogDoc,
   LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc, AttendanceSettingsDoc,
-  ActivitySessionDoc, DeviceDoc
+  ActivitySessionDoc, DeviceDoc,
+  LatestLocationDoc, LocationHistoryDoc, GeofenceDoc, GeofenceEventDoc, TrackingPolicyDoc,
+  DailyTrackingSummaryDoc, TrackingAlertDoc
 } from './types';
+
+const DATA_DIR = path.resolve(__dirname, '../data');
+if (!fs.existsSync(DATA_DIR)) {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (err: any) {
+    console.error('[DB Storage] Failed to create data directory:', err.message);
+  }
+}
 
 export class Collection<T extends { _id: string }> {
   private name: string;
   private items: Map<string, T> = new Map();
+  private filePath: string;
+  private saveTimer: NodeJS.Timeout | null = null;
 
   constructor(name: string, initialItems: T[] = []) {
     this.name = name;
-    initialItems.forEach(item => this.items.set(item._id, JSON.parse(JSON.stringify(item))));
+    this.filePath = path.join(DATA_DIR, `${name}.json`);
+
+    let loadedFromDisk = false;
+    if (fs.existsSync(this.filePath)) {
+      try {
+        const raw = fs.readFileSync(this.filePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          parsed.forEach(item => {
+            if (item && item._id) {
+              this.items.set(item._id, item);
+            }
+          });
+          loadedFromDisk = true;
+        }
+      } catch (err: any) {
+        console.warn(`[DB Storage] Warning reading disk file for ${name}:`, err.message);
+      }
+    }
+
+    // If disk file does not exist or was empty, initialize with seed items and save to disk
+    if (!loadedFromDisk && initialItems.length > 0) {
+      initialItems.forEach(item => this.items.set(item._id, JSON.parse(JSON.stringify(item))));
+      this.persistToDiskSync();
+    }
+  }
+
+  private persistToDiskSync(): void {
+    try {
+      const arr = Array.from(this.items.values());
+      fs.writeFileSync(this.filePath, JSON.stringify(arr, null, 2), 'utf-8');
+    } catch (err: any) {
+      console.error(`[DB Storage] Error writing ${this.name}.json to disk:`, err.message);
+    }
+  }
+
+  private persistToDisk(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => {
+      this.persistToDiskSync();
+    }, 50);
   }
 
   public getAll(): T[] {
@@ -52,7 +105,20 @@ export class Collection<T extends { _id: string }> {
     const id = doc._id || `${this.name.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const fullDoc = { ...doc, _id: id } as T;
     this.items.set(id, JSON.parse(JSON.stringify(fullDoc)));
+    this.persistToDisk();
     return JSON.parse(JSON.stringify(fullDoc));
+  }
+
+  public insertMany(docs: (Omit<T, '_id'> & { _id?: string })[]): T[] {
+    const inserted: T[] = [];
+    for (const doc of docs) {
+      const id = doc._id || `${this.name.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const fullDoc = { ...doc, _id: id } as T;
+      this.items.set(id, JSON.parse(JSON.stringify(fullDoc)));
+      inserted.push(JSON.parse(JSON.stringify(fullDoc)));
+    }
+    this.persistToDisk();
+    return inserted;
   }
 
   public updateById(id: string, updates: Partial<T> | ((prev: T) => T)): T | null {
@@ -67,11 +133,14 @@ export class Collection<T extends { _id: string }> {
     }
 
     this.items.set(id, JSON.parse(JSON.stringify(updated)));
+    this.persistToDisk();
     return JSON.parse(JSON.stringify(updated));
   }
 
   public deleteById(id: string): boolean {
-    return this.items.delete(id);
+    const result = this.items.delete(id);
+    if (result) this.persistToDisk();
+    return result;
   }
 
   public countDocuments(predicate?: (item: T) => boolean): number {
@@ -113,6 +182,7 @@ export class Database {
   public salaries!: Collection<SalaryDoc>;
   public performance!: Collection<PerformanceDoc>;
   public integrations!: Collection<IntegrationDoc>;
+  public integrationLogs!: Collection<IntegrationLogDoc>;
   public auditLogs!: Collection<AuditLogDoc>;
   public callLogs!: Collection<CallLogDoc>;
   public leaves!: Collection<LeaveDoc>;
@@ -123,6 +193,13 @@ export class Database {
   public attendanceSettings!: Collection<AttendanceSettingsDoc>;
   public activitySessions!: Collection<ActivitySessionDoc>;
   public devices!: Collection<DeviceDoc>;
+  public latestLocations!: Collection<LatestLocationDoc>;
+  public locationHistory!: Collection<LocationHistoryDoc>;
+  public geofences!: Collection<GeofenceDoc>;
+  public geofenceEvents!: Collection<GeofenceEventDoc>;
+  public trackingPolicies!: Collection<TrackingPolicyDoc>;
+  public dailyTrackingSummaries!: Collection<DailyTrackingSummaryDoc>;
+  public trackingAlerts!: Collection<TrackingAlertDoc>;
 
   private constructor() {}
 
@@ -162,6 +239,7 @@ export class Database {
     this.salaries = new Collection<SalaryDoc>('salaries', seed.salaries);
     this.performance = new Collection<PerformanceDoc>('performance', seed.performance);
     this.integrations = new Collection<IntegrationDoc>('integrations', seed.integrations);
+    this.integrationLogs = new Collection<IntegrationLogDoc>('integrationLogs', (seed as any).integrationLogs || []);
     this.auditLogs = new Collection<AuditLogDoc>('auditLogs', seed.auditLogs);
     this.callLogs = new Collection<CallLogDoc>('callLogs', (seed as any).callLogs || []);
     this.leaves = new Collection<LeaveDoc>('leaves', (seed as any).leaves || []);
@@ -172,6 +250,13 @@ export class Database {
     this.attendanceSettings = new Collection<AttendanceSettingsDoc>('attendanceSettings', (seed as any).attendanceSettings || []);
     this.activitySessions = new Collection<ActivitySessionDoc>('activitySessions', (seed as any).activitySessions || []);
     this.devices = new Collection<DeviceDoc>('devices', (seed as any).devices || []);
+    this.latestLocations = new Collection<LatestLocationDoc>('latestLocations', (seed as any).latestLocations || []);
+    this.locationHistory = new Collection<LocationHistoryDoc>('locationHistory', (seed as any).locationHistory || []);
+    this.geofences = new Collection<GeofenceDoc>('geofences', (seed as any).geofences || []);
+    this.geofenceEvents = new Collection<GeofenceEventDoc>('geofenceEvents', (seed as any).geofenceEvents || []);
+    this.trackingPolicies = new Collection<TrackingPolicyDoc>('trackingPolicies', (seed as any).trackingPolicies || []);
+    this.dailyTrackingSummaries = new Collection<DailyTrackingSummaryDoc>('dailyTrackingSummaries', (seed as any).dailyTrackingSummaries || []);
+    this.trackingAlerts = new Collection<TrackingAlertDoc>('trackingAlerts', (seed as any).trackingAlerts || []);
 
     this.initialized = true;
     console.log('✅ 360CRM Enterprise Database & Memory Engine Initialized with Shiv Shakti Seed Data');

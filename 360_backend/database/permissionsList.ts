@@ -863,6 +863,53 @@ export const ALL_PERMISSIONS: PermissionDoc[] = [
     category: 'Integrations'
   },
 
+  // ==================== EMPLOYEE LIVE TRACKING & GEOFENCING ====================
+  {
+    _id: 'perm_tracking_view_live',
+    module: 'Live Tracking',
+    action: 'View',
+    code: 'employee_tracking.view_live',
+    name: 'View Live Tracking Map',
+    description: 'Access realtime employee GPS map, status, and battery telemetry',
+    category: 'People'
+  },
+  {
+    _id: 'perm_tracking_view_history',
+    module: 'Live Tracking',
+    action: 'View History',
+    code: 'employee_tracking.view_history',
+    name: 'View Route History',
+    description: 'Inspect daily route polylines, travel stops, and movement timelines',
+    category: 'People'
+  },
+  {
+    _id: 'perm_tracking_manage',
+    module: 'Live Tracking',
+    action: 'Manage',
+    code: 'employee_tracking.manage',
+    name: 'Manage Tracking Policies',
+    description: 'Configure working hours tracking rules, intervals, and employee overrides',
+    category: 'People'
+  },
+  {
+    _id: 'perm_tracking_manage_geofence',
+    module: 'Live Tracking',
+    action: 'Manage Geofences',
+    code: 'employee_tracking.manage_geofence',
+    name: 'Manage Geofence Sites',
+    description: 'Create and edit office, warehouse, and client site geofence perimeters',
+    category: 'People'
+  },
+  {
+    _id: 'perm_tracking_export',
+    module: 'Live Tracking',
+    action: 'Export',
+    code: 'employee_tracking.export',
+    name: 'Export Tracking Reports',
+    description: 'Export daily distance, field duration, and geofence audit summaries to CSV',
+    category: 'People'
+  },
+
   // ==================== USERS & ROLES / ADMIN ====================
   {
     _id: 'perm_users_view',

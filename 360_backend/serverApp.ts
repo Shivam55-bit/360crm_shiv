@@ -2,12 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import { db } from './database/db';
 import apiRoutes from './routes/apiRoutes';
+import { IntegrationSchedulerService } from './integrations/scheduler.service';
 
 export async function createBackendApp() {
   const app = express();
 
   // Initialize in-memory mock/seed database
   await db.init();
+
+  // Initialize background Enterprise Integrations Scheduler
+  IntegrationSchedulerService.start();
 
   // Basic Middlewares
   app.use(cors({

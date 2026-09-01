@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
 import { api } from '@/src/services/api';
 import { Lead, Attendance, CallLog, FollowUp, AttendanceSettingsDoc } from '@/src/types';
+import { EmployeeLocationTrackerWidget } from '../components/EmployeeLocationTrackerWidget';
 import {
   Phone,
   PhoneCall,
@@ -155,6 +156,23 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
       showToast(err.message || 'Break operation failed', 'error');
     } finally {
       setBreakLoading(false);
+    }
+  };
+
+  // Quick Lead Status Updater
+  const handleQuickStatusChange = async (leadId: string, newStatus: string) => {
+    try {
+      setLeads(prev => prev.map(l => l._id === leadId ? { ...l, status: newStatus as any } : l));
+      const res = await api.put(`/leads/${leadId}`, { status: newStatus });
+      if (res.success) {
+        showToast(`Lead status updated to ${newStatus}`, 'success');
+      } else {
+        showToast(res.message || 'Failed to update lead status', 'error');
+        fetchData();
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error updating status', 'error');
+      fetchData();
     }
   };
 
@@ -485,6 +503,9 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
         </div>
       </div>
 
+      {/* Real-time Workforce GPS Broadcast Widget */}
+      <EmployeeLocationTrackerWidget />
+
       {/* Tab Navigation */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
@@ -570,7 +591,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
             </div>
           </div>
 
-          {/* Leads Grid */}
+          {/* Leads List / Table View */}
           {myAssignedLeads.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto text-xl">
@@ -583,136 +604,191 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myAssignedLeads.map(lead => {
-                const leadCalls = callLogs.filter(c => c.leadId === lead._id);
-                return (
-                  <div
-                    key={lead._id}
-                    className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-blue-400/60 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
-                  >
-                    <div className="space-y-3">
-                      {/* Top Header */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">
-                            {lead.name}
-                          </h3>
-                          {lead.companyName && (
-                            <p className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 mt-0.5">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">{lead.companyName}</span>
-                            </p>
-                          )}
-                        </div>
-                        <span
-                          className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                            lead.status === 'NEW'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : lead.status === 'CONTACTED'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : lead.status === 'QUALIFIED'
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                              : lead.status === 'PROPOSAL'
-                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                              : lead.status === 'WON'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}
-                        >
-                          {lead.status}
-                        </span>
-                      </div>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="px-4 py-3.5">Lead / Buyer</th>
+                      <th className="px-4 py-3.5">Company & City</th>
+                      <th className="px-4 py-3.5">Contact Details</th>
+                      <th className="px-4 py-3.5">Source</th>
+                      <th className="px-4 py-3.5">Deal Est.</th>
+                      <th className="px-4 py-3.5">Status</th>
+                      <th className="px-4 py-3.5">Call Audio</th>
+                      <th className="px-4 py-3.5 text-right">Calling & Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {myAssignedLeads.map(lead => {
+                      const leadCalls = callLogs.filter(c => c.leadId === lead._id);
+                      return (
+                        <tr key={lead._id} className="hover:bg-slate-50/80 transition group">
+                          {/* 1. Lead / Buyer Column */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-200">
+                                {lead.name.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate max-w-[200px]">
+                                  {lead.name}
+                                </div>
+                                <div className="text-[11px] text-slate-500 truncate max-w-[200px]">
+                                  {lead.productName || lead.requirement || 'General Requirement'}
+                                </div>
+                                {lead.leadCode && (
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {lead.leadCode}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
 
-                      {/* Contact Info & Details */}
-                      <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400 font-sans font-medium">Phone:</span>
-                          <a
-                            href={`tel:${lead.phone}`}
-                            className="font-bold text-blue-600 hover:underline flex items-center gap-1"
-                          >
-                            <Phone className="w-3 h-3" />
-                            {lead.phone}
-                          </a>
-                        </div>
-                        {lead.email && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400 font-sans font-medium">Email:</span>
-                            <span className="truncate max-w-[160px] text-slate-700">{lead.email}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
-                          <span className="text-slate-400 font-sans font-medium">Deal Est.:</span>
-                          <span className="font-bold text-slate-900 font-sans">
-                            ₹{lead.estimatedValue?.toLocaleString() || '0'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400 font-sans font-medium">Source:</span>
-                          <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold font-sans">
-                            {lead.source}
-                          </span>
-                        </div>
-                      </div>
+                          {/* 2. Company & City Column */}
+                          <td className="px-4 py-3.5">
+                            {lead.companyName ? (
+                              <div className="font-medium text-slate-800 flex items-center gap-1">
+                                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate max-w-[150px]">{lead.companyName}</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">—</span>
+                            )}
+                            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>{lead.city || 'Varanasi'}{lead.state ? `, ${lead.state}` : ''}</span>
+                            </div>
+                          </td>
 
-                      {/* Call Recordings Attached Indicator */}
-                      {leadCalls.length > 0 && (
-                        <div className="flex items-center justify-between text-[11px] px-2.5 py-1 bg-blue-50/70 border border-blue-200/60 rounded-lg text-blue-700 font-semibold">
-                          <span className="flex items-center gap-1.5">
-                            <FileAudio className="w-3.5 h-3.5 text-blue-600" />
-                            {leadCalls.length} Call Recording{leadCalls.length > 1 ? 's' : ''} saved
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedLeadHistory(lead);
-                              setLeadCallHistory(leadCalls);
-                            }}
-                            className="text-[10px] text-blue-600 hover:underline font-bold"
-                          >
-                            Listen 🎧
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                          {/* 3. Contact Details */}
+                          <td className="px-4 py-3.5">
+                            <div>
+                              <a
+                                href={`tel:${lead.phone}`}
+                                className="font-semibold text-blue-600 hover:underline flex items-center gap-1 text-[11px]"
+                              >
+                                <Phone className="w-3 h-3" />
+                                <span>{lead.phone}</span>
+                              </a>
+                            </div>
+                            {lead.email ? (
+                              <div className="text-[11px] text-slate-500 truncate max-w-[150px] mt-0.5">
+                                {lead.email}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-[10px]">No email</span>
+                            )}
+                          </td>
 
-                    {/* Action Buttons Toolbar */}
-                    <div className="pt-4 mt-3 border-t border-slate-100 flex items-center gap-2">
-                      {/* Call & Record Button */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLeadForCall(lead)}
-                        className="flex-1 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        <span>Call & Record</span>
-                      </button>
+                          {/* 4. Source */}
+                          <td className="px-4 py-3.5">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              lead.source === 'TradeIndia' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                              lead.source === 'IndiaMART' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                              lead.source === 'WhatsApp' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                              lead.source === 'Website' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                              'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {lead.source}
+                            </span>
+                          </td>
 
-                      {/* WhatsApp Button */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLeadForWhatsApp(lead)}
-                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        title="Quick WhatsApp Message"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">WhatsApp</span>
-                      </button>
+                          {/* 5. Deal Est. */}
+                          <td className="px-4 py-3.5 font-bold text-slate-800">
+                            ₹{lead.estimatedValue?.toLocaleString() || '50,000'}
+                          </td>
 
-                      {/* Schedule Follow-up */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLeadForFollowUp(lead)}
-                        className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
-                        title="Schedule Next Follow-Up"
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                          {/* 6. Status Selector */}
+                          <td className="px-4 py-3.5">
+                            <select
+                              value={lead.status}
+                              onChange={(e) => handleQuickStatusChange(lead._id, e.target.value)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border focus:outline-hidden cursor-pointer ${
+                                lead.status === 'NEW'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  : lead.status === 'CONTACTED'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : lead.status === 'QUALIFIED'
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : lead.status === 'PROPOSAL'
+                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                  : lead.status === 'WON'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                              }`}
+                            >
+                              <option value="NEW">NEW</option>
+                              <option value="CONTACTED">CONTACTED</option>
+                              <option value="QUALIFIED">QUALIFIED</option>
+                              <option value="PROPOSAL">PROPOSAL</option>
+                              <option value="WON">WON</option>
+                              <option value="LOST">LOST</option>
+                            </select>
+                          </td>
+
+                          {/* 7. Call Recordings */}
+                          <td className="px-4 py-3.5">
+                            {leadCalls.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedLeadHistory(lead);
+                                  setLeadCallHistory(leadCalls);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold transition"
+                                title="Listen to saved audio recordings"
+                              >
+                                <FileAudio className="w-3 h-3 text-blue-600" />
+                                <span>🎧 {leadCalls.length} Saved</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">—</span>
+                            )}
+                          </td>
+
+                          {/* 8. Action Buttons Toolbar */}
+                          <td className="px-4 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Call & Record Button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedLeadForCall(lead)}
+                                className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-[11px] font-bold shadow-2xs active:scale-95 transition-all flex items-center gap-1"
+                                title="Start Phone Call & Audio Recording"
+                              >
+                                <PhoneCall className="w-3 h-3" />
+                                <span>Call & Record</span>
+                              </button>
+
+                              {/* WhatsApp Button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedLeadForWhatsApp(lead)}
+                                className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs active:scale-95 transition-all flex items-center gap-1"
+                                title="Send WhatsApp Message"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Schedule Follow-up */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedLeadForFollowUp(lead)}
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition"
+                                title="Schedule Follow-Up"
+                              >
+                                <Calendar className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

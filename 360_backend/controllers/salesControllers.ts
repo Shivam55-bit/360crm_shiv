@@ -9,30 +9,40 @@ import { recordAuditLog } from '../middleware/audit';
 
 export async function getLeads(req: AuthenticatedRequest, res: Response) {
   try {
-    const { status, source, priority, assignedTo, search } = req.query;
-    let leads = db.leads.getAll();
+    const { status, source, priority, assignedTo, search, dateFilter, fromDate, toDate, month } = req.query;
+    let allLeads = db.leads.getAll();
 
-    // Stats computation
-    const totalLeads = leads.length;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayLeads = leads.filter(l => l.createdAt && l.createdAt.startsWith(todayStr)).length;
-    const qualifiedLeads = leads.filter(l => l.status === 'QUALIFIED').length;
-    const convertedLeads = leads.filter(l => l.status === 'WON' || l.status === 'CONVERTED').length;
-    const lostLeads = leads.filter(l => l.status === 'LOST').length;
-    const pipelineValue = leads
+    // 1. Overall System KPI Stats (ALWAYS computed across ALL leads in the CRM platform)
+    const totalLeads = allLeads.length;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const todayLeads = allLeads.filter(l => l.createdAt && l.createdAt.startsWith(todayStr)).length;
+    const qualifiedLeads = allLeads.filter(l => l.status === 'QUALIFIED').length;
+    const convertedLeads = allLeads.filter(l => l.status === 'WON' || l.status === 'CONVERTED').length;
+    const lostLeads = allLeads.filter(l => l.status === 'LOST').length;
+    const pipelineValue = allLeads
       .filter(l => l.status !== 'LOST' && l.status !== 'WON' && l.status !== 'CONVERTED')
       .reduce((sum, l) => sum + (Number(l.estimatedValue) || 0), 0);
 
+    const curMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const curMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    const currentMonthLeads = allLeads.filter(l => {
+      const t = new Date(l.createdAt || 0).getTime();
+      return t >= curMonthStart && t < curMonthEnd;
+    }).length;
+
     // Source breakdown stats
     const sourceBreakdown: Record<string, number> = {};
-    leads.forEach(l => {
+    allLeads.forEach(l => {
       const src = l.source || 'Manual';
       sourceBreakdown[src] = (sourceBreakdown[src] || 0) + 1;
     });
 
-    // Filtering
+    let leads = [...allLeads];
+
+    // 2. Status / Source / Priority / AssignedTo / Search Filtering
     if (status) leads = leads.filter(l => l.status === status);
-    if (source) leads = leads.filter(l => l.source === source);
+    if (source) leads = leads.filter(l => l.source === source || l.source?.toUpperCase() === String(source).toUpperCase());
     if (priority) leads = leads.filter(l => l.priority === priority);
     if (assignedTo) leads = leads.filter(l => l.assignedTo === assignedTo);
     if (search) {
@@ -47,7 +57,66 @@ export async function getLeads(req: AuthenticatedRequest, res: Response) {
       );
     }
 
-    leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // 3. Date / Month Filtering (Default: THIS_MONTH if dateFilter not specified or dateFilter === 'THIS_MONTH')
+    const effectiveFilter = dateFilter === undefined ? 'THIS_MONTH' : String(dateFilter).trim();
+
+    if (effectiveFilter && effectiveFilter !== 'ALL_TIME' && effectiveFilter !== 'ALL' && effectiveFilter !== '') {
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const todayEnd = todayStart + 86400000;
+      const yesterdayStart = todayStart - 86400000;
+
+      if (effectiveFilter === 'THIS_MONTH') {
+        leads = leads.filter(l => {
+          const t = new Date(l.createdAt || 0).getTime();
+          return t >= curMonthStart && t < curMonthEnd;
+        });
+      } else if (effectiveFilter === 'TODAY') {
+        leads = leads.filter(l => {
+          const t = new Date(l.createdAt || 0).getTime();
+          return t >= todayStart && t < todayEnd;
+        });
+      } else if (effectiveFilter === 'YESTERDAY') {
+        leads = leads.filter(l => {
+          const t = new Date(l.createdAt || 0).getTime();
+          return t >= yesterdayStart && t < todayStart;
+        });
+      } else if (effectiveFilter === 'LAST_7_DAYS') {
+        const sevenDaysAgo = todayStart - 7 * 86400000;
+        leads = leads.filter(l => new Date(l.createdAt || 0).getTime() >= sevenDaysAgo);
+      } else if (effectiveFilter === 'LAST_30_DAYS') {
+        const thirtyDaysAgo = todayStart - 30 * 86400000;
+        leads = leads.filter(l => new Date(l.createdAt || 0).getTime() >= thirtyDaysAgo);
+      } else if (effectiveFilter === 'PREV_MONTH') {
+        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        leads = leads.filter(l => {
+          const t = new Date(l.createdAt || 0).getTime();
+          return t >= prevMonthStart && t < prevMonthEnd;
+        });
+      } else if (effectiveFilter.startsWith('MONTH_') || month || effectiveFilter.match(/^\d{4}-\d{2}$/)) {
+        const monthStr = (month ? String(month) : effectiveFilter.replace('MONTH_', '')).trim();
+        const [yr, mo] = monthStr.split('-').map(Number);
+        if (yr && mo) {
+          const mStart = new Date(yr, mo - 1, 1).getTime();
+          const mEnd = new Date(yr, mo, 1).getTime();
+          leads = leads.filter(l => {
+            const t = new Date(l.createdAt || 0).getTime();
+            return t >= mStart && t < mEnd;
+          });
+        }
+      } else if (effectiveFilter === 'CUSTOM' || fromDate || toDate) {
+        if (fromDate) {
+          const fromTime = new Date(String(fromDate)).getTime();
+          if (!isNaN(fromTime)) leads = leads.filter(l => new Date(l.createdAt || 0).getTime() >= fromTime);
+        }
+        if (toDate) {
+          const toTime = new Date(String(toDate) + 'T23:59:59.999Z').getTime();
+          if (!isNaN(toTime)) leads = leads.filter(l => new Date(l.createdAt || 0).getTime() <= toTime);
+        }
+      }
+    }
+
+    leads.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
     return res.json({
       success: true,
@@ -55,6 +124,7 @@ export async function getLeads(req: AuthenticatedRequest, res: Response) {
       stats: {
         totalLeads,
         todayLeads,
+        currentMonthLeads,
         qualifiedLeads,
         convertedLeads,
         lostLeads,
@@ -475,7 +545,14 @@ export async function getCustomerDetails(req: AuthenticatedRequest, res: Respons
     const quotations = db.quotations.find(q => q.customerId === id);
     const salesOrders = db.salesOrders.find(s => s.customerId === id);
     const invoices = db.invoices.find(i => i.customerId === id);
-    const payments = db.payments.find(p => p.customerId === id);
+    const invoiceIds = new Set(invoices.map(i => i._id));
+    const payments = db.payments.find(p =>
+      p.customerId === id ||
+      p.partyId === id ||
+      (p.customerName && p.customerName === customer.name) ||
+      (p.partyName && p.partyName === customer.name) ||
+      (p.invoiceId && invoiceIds.has(p.invoiceId))
+    );
     const timeline = db.activityTimeline.find(t => t.entityId === id || t.entityId === customer.name);
 
     return res.json({

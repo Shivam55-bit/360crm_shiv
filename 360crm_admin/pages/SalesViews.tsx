@@ -69,6 +69,36 @@ import {
   Line
 } from 'recharts';
 
+// Helper to calculate how many minutes/hours ago a lead arrived
+export const getLeadArrivalLabel = (createdAt?: string): { text: string; isNew: boolean; fullDate: string } => {
+  if (!createdAt) return { text: 'Unknown', isNew: false, fullDate: '—' };
+  const d = new Date(createdAt);
+  if (isNaN(d.getTime())) return { text: 'Unknown', isNew: false, fullDate: '—' };
+
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  const fullDate = d.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  if (diffSec < 60) return { text: 'Just now', isNew: true, fullDate };
+  if (diffMin === 1) return { text: '1m ago', isNew: true, fullDate };
+  if (diffMin < 60) return { text: `${diffMin}m ago`, isNew: diffMin <= 30, fullDate };
+  if (diffHours === 1) return { text: '1h ago', isNew: false, fullDate };
+  if (diffHours < 24) return { text: `${diffHours}h ago`, isNew: false, fullDate };
+  if (diffDays === 1) return { text: 'Yesterday', isNew: false, fullDate };
+  if (diffDays < 7) return { text: `${diffDays}d ago`, isNew: false, fullDate };
+  return { text: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), isNew: false, fullDate };
+};
+
 // ==========================================
 // 1. LEADS VIEW
 // ==========================================
@@ -82,6 +112,10 @@ export const LeadsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('THIS_MONTH');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -130,11 +164,15 @@ export const LeadsView: React.FC = () => {
 
   const fetchLeads = async () => {
     setLoading(true);
+    const effectiveDateParam = dateFilter === 'SPECIFIC_MONTH' && selectedMonth ? `MONTH_${selectedMonth}` : dateFilter;
     const res = await api.get('/leads', {
       search,
       status: statusFilter,
       source: sourceFilter,
-      priority: priorityFilter
+      priority: priorityFilter,
+      dateFilter: effectiveDateParam,
+      fromDate,
+      toDate
     });
     if (res.success && res.data) {
       setLeads(res.data);
@@ -146,7 +184,7 @@ export const LeadsView: React.FC = () => {
   useEffect(() => {
     fetchLeads();
     fetchSalesReps();
-  }, [statusFilter, sourceFilter, priorityFilter]);
+  }, [statusFilter, sourceFilter, priorityFilter, dateFilter, selectedMonth, fromDate, toDate]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,11 +383,11 @@ export const LeadsView: React.FC = () => {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {[
-          { label: 'Total Leads', value: stats?.totalLeads ?? leads.length, color: 'text-blue-600', bg: 'bg-blue-50/60', icon: Target },
-          { label: "Today's Inbound", value: stats?.todayLeads ?? 0, color: 'text-emerald-600', bg: 'bg-emerald-50/60', icon: Calendar },
-          { label: 'Qualified', value: stats?.qualifiedLeads ?? leads.filter(l => l.status === 'QUALIFIED').length, color: 'text-indigo-600', bg: 'bg-indigo-50/60', icon: CheckCircle2 },
+          { label: 'Total Leads (All-Time)', value: stats?.totalLeads ?? leads.length, color: 'text-blue-600', bg: 'bg-blue-50/60', icon: Target },
+          { label: "This Month's Inbound", value: stats?.currentMonthLeads ?? leads.length, color: 'text-indigo-600', bg: 'bg-indigo-50/60', icon: Calendar },
+          { label: "Today's Inbound", value: stats?.todayLeads ?? 0, color: 'text-emerald-600', bg: 'bg-emerald-50/60', icon: Sparkles },
+          { label: 'Qualified', value: stats?.qualifiedLeads ?? leads.filter(l => l.status === 'QUALIFIED').length, color: 'text-purple-600', bg: 'bg-purple-50/60', icon: CheckCircle2 },
           { label: 'Won / Converted', value: stats?.convertedLeads ?? leads.filter(l => l.status === 'WON' || l.status === 'CONVERTED').length, color: 'text-teal-600', bg: 'bg-teal-50/60', icon: Award },
-          { label: 'Lost Deals', value: stats?.lostLeads ?? leads.filter(l => l.status === 'LOST').length, color: 'text-rose-600', bg: 'bg-rose-50/60', icon: AlertCircle },
           { label: 'Pipeline Value', value: `₹${((stats?.pipelineValue ?? 0) / 100000).toFixed(1)}L`, color: 'text-amber-600', bg: 'bg-amber-50/60', icon: DollarSign }
         ].map((kpi, idx) => {
           const Icon = kpi.icon;
@@ -379,11 +417,75 @@ export const LeadsView: React.FC = () => {
             />
           </form>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            {/* Date / Month Filter Dropdown */}
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <select
+                value={dateFilter}
+                onChange={e => {
+                  const val = e.target.value;
+                  setDateFilter(val);
+                  if (val !== 'CUSTOM') {
+                    setFromDate('');
+                    setToDate('');
+                  }
+                  if (val !== 'SPECIFIC_MONTH') {
+                    setSelectedMonth('');
+                  }
+                }}
+                className="bg-transparent focus:outline-hidden text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                <option value="THIS_MONTH">This Month ({new Date().toLocaleString('en-IN', { month: 'short', year: 'numeric' })}) [Default]</option>
+                <option value="ALL_TIME">All Time ({stats?.totalLeads ?? 0} Total Leads)</option>
+                <option value="TODAY">Today's Leads</option>
+                <option value="YESTERDAY">Yesterday</option>
+                <option value="LAST_7_DAYS">Last 7 Days</option>
+                <option value="LAST_30_DAYS">Last 30 Days</option>
+                <option value="PREV_MONTH">Last Month</option>
+                <option value="SPECIFIC_MONTH">Select Specific Month...</option>
+                <option value="CUSTOM">Custom Date Range...</option>
+              </select>
+            </div>
+
+            {/* Specific Month Picker */}
+            {dateFilter === 'SPECIFIC_MONTH' && (
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+                <input
+                  type="month"
+                  value={selectedMonth || new Date().toISOString().slice(0, 7)}
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
+                  title="Pick any Month"
+                />
+              </div>
+            )}
+
+            {/* Custom Range Inputs */}
+            {dateFilter === 'CUSTOM' && (
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1">
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={e => setFromDate(e.target.value)}
+                  className="bg-transparent text-[11px] font-medium text-slate-700 focus:outline-hidden"
+                  title="From Date"
+                />
+                <span className="text-slate-400 text-xs">-</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={e => setToDate(e.target.value)}
+                  className="bg-transparent text-[11px] font-medium text-slate-700 focus:outline-hidden"
+                  title="To Date"
+                />
+              </div>
+            )}
+
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
             >
               <option value="">All Statuses</option>
               <option value="NEW">New</option>
@@ -399,13 +501,14 @@ export const LeadsView: React.FC = () => {
             <select
               value={sourceFilter}
               onChange={e => setSourceFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
             >
               <option value="">All Sources</option>
-              <option value="Website">Website Inbound</option>
               <option value="TradeIndia">TradeIndia</option>
               <option value="IndiaMART">IndiaMART</option>
+              <option value="Website">Website Inbound</option>
               <option value="WhatsApp">WhatsApp</option>
+              <option value="Custom REST">Custom REST API</option>
               <option value="Referral">Referral</option>
               <option value="Manual">Manual</option>
             </select>
@@ -413,7 +516,7 @@ export const LeadsView: React.FC = () => {
             <select
               value={priorityFilter}
               onChange={e => setPriorityFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
             >
               <option value="">All Priorities</option>
               <option value="LOW">Low Priority</option>
@@ -421,8 +524,77 @@ export const LeadsView: React.FC = () => {
               <option value="HIGH">High Priority</option>
               <option value="URGENT">Urgent Priority</option>
             </select>
+
+            {(statusFilter || sourceFilter || priorityFilter || dateFilter !== 'THIS_MONTH' || fromDate || toDate || search) && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('');
+                  setSourceFilter('');
+                  setPriorityFilter('');
+                  setDateFilter('THIS_MONTH');
+                  setSelectedMonth('');
+                  setFromDate('');
+                  setToDate('');
+                }}
+                className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors"
+                title="Reset to Current Month"
+              >
+                Reset
+              </button>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Active View Context Bar */}
+      <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-slate-800 flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-blue-600" />
+            <span>Active View:</span>
+          </span>
+          <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-2xs">
+            {dateFilter === 'THIS_MONTH'
+              ? `Current Month (${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })})`
+              : dateFilter === 'ALL_TIME'
+              ? 'All-Time Leads'
+              : dateFilter === 'SPECIFIC_MONTH' && selectedMonth
+              ? `Month: ${new Date(selectedMonth + '-01').toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`
+              : dateFilter === 'TODAY'
+              ? "Today's Inbound"
+              : dateFilter === 'YESTERDAY'
+              ? 'Yesterday'
+              : dateFilter === 'LAST_7_DAYS'
+              ? 'Last 7 Days'
+              : dateFilter === 'PREV_MONTH'
+              ? 'Last Month'
+              : dateFilter === 'CUSTOM'
+              ? `Custom: ${fromDate || 'Start'} to ${toDate || 'End'}`
+              : dateFilter}
+          </span>
+          <span className="text-slate-500 font-medium">
+            • Showing <strong>{leads.length}</strong> {leads.length === 1 ? 'lead' : 'leads'} (Total CRM Records: <strong className="text-slate-900">{stats?.totalLeads ?? leads.length}</strong>)
+          </span>
+        </div>
+
+        {dateFilter !== 'ALL_TIME' ? (
+          <button
+            onClick={() => setDateFilter('ALL_TIME')}
+            className="text-blue-600 hover:text-blue-700 font-bold text-xs hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+          >
+            <span>View All-Time Leads ({stats?.totalLeads ?? leads.length})</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setDateFilter('THIS_MONTH')}
+            className="text-blue-600 hover:text-blue-700 font-bold text-xs hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+          >
+            <span>Filter to Current Month ({stats?.currentMonthLeads ?? 0})</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* Leads Table */}
@@ -436,44 +608,67 @@ export const LeadsView: React.FC = () => {
           <EmptyState
             icon={Target}
             title="No leads match your search criteria"
-            description="Try changing your search keywords or clear your active status and channel filters."
+            description="Try changing your search keywords or clear your active date, status, and channel filters."
             actionText="Clear All Filters"
-            onAction={() => { setSearch(''); setStatusFilter(''); setSourceFilter(''); setPriorityFilter(''); }}
+            onAction={() => { setSearch(''); setStatusFilter(''); setSourceFilter(''); setPriorityFilter(''); setDateFilter(''); setFromDate(''); setToDate(''); }}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-5 py-3.5">Lead Details</th>
-                  <th className="px-5 py-3.5">Contact Info</th>
-                  <th className="px-5 py-3.5">Source & Channel</th>
-                  <th className="px-5 py-3.5">Pipeline Status</th>
-                  <th className="px-5 py-3.5">Priority</th>
-                  <th className="px-5 py-3.5">Est. Value</th>
-                  <th className="px-5 py-3.5">Assigned Rep</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+                  <th className="px-5 py-3.5 min-w-[270px]">Lead Details & Arrival</th>
+                  <th className="px-5 py-3.5 min-w-[160px]">Contact Info</th>
+                  <th className="px-5 py-3.5 min-w-[130px]">Source & Channel</th>
+                  <th className="px-5 py-3.5 min-w-[120px]">Pipeline Status</th>
+                  <th className="px-5 py-3.5 min-w-[100px]">Priority</th>
+                  <th className="px-5 py-3.5 min-w-[110px]">Est. Value</th>
+                  <th className="px-5 py-3.5 min-w-[140px]">Assigned Rep</th>
+                  <th className="px-5 py-3.5 text-right min-w-[160px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {leads.map(lead => (
+                {leads.map(lead => {
+                  const arrival = getLeadArrivalLabel(lead.createdAt);
+                  return (
                   <tr key={lead._id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/60 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0">
+                    <td className="px-5 py-4 min-w-[270px]">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200/70 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-2xs">
                           {lead.name.slice(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <span>{lead.name}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-xs truncate max-w-[150px]">{lead.name}</span>
                             {lead.leadCode && (
-                              <span className="text-[10px] font-mono text-slate-400 font-semibold">{lead.leadCode}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[10px] font-semibold text-slate-500 shrink-0 whitespace-nowrap border border-slate-200/60">
+                                {lead.leadCode}
+                              </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                            <Building className="w-3 h-3 text-slate-400" />
-                            <span>{lead.companyName || 'Individual Contact'}</span>
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 truncate max-w-[210px]">
+                            <Building className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{lead.companyName || 'Individual Contact'}</span>
                           </p>
+                          <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold whitespace-nowrap ${
+                                arrival.isNew
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                              title={`Lead Arrived at: ${arrival.fullDate}`}
+                            >
+                              <Clock className={`w-3 h-3 shrink-0 ${arrival.isNew ? 'text-emerald-600' : 'text-slate-400'}`} />
+                              <span>{arrival.text}</span>
+                            </span>
+                            {arrival.isNew && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white font-bold text-[9px] uppercase tracking-wider whitespace-nowrap shadow-2xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
+                                <span>New</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -492,9 +687,22 @@ export const LeadsView: React.FC = () => {
                     </td>
 
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px]">
-                        {lead.source}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md font-semibold text-[11px] ${
+                          lead.source === 'TradeIndia' || lead.source === 'TRADEINDIA'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200/80 font-bold'
+                            : lead.source === 'IndiaMART'
+                            ? 'bg-teal-50 text-teal-700 border border-teal-200/80 font-bold'
+                            : lead.source === 'Website'
+                            ? 'bg-blue-50 text-blue-700 font-bold'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {lead.source}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {lead.channel || (lead.source === 'TradeIndia' || lead.source === 'IndiaMART' ? 'B2B Portal' : 'Direct Inbound')}
+                        </span>
+                      </div>
                     </td>
 
                     <td className="px-5 py-4">
@@ -517,23 +725,43 @@ export const LeadsView: React.FC = () => {
                     </td>
 
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-[10px] shrink-0">
-                          {(lead.assignedTo || 'U').slice(0, 1).toUpperCase()}
+                      {lead.assignedTo && lead.assignedTo !== 'Unassigned' ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-[10px] shrink-0">
+                            {lead.assignedTo.slice(0, 1).toUpperCase()}
+                          </div>
+                          <span className="font-bold text-slate-800 text-xs block truncate max-w-[110px]">{lead.assignedTo}</span>
+                          <button
+                            onClick={() => {
+                              setAssigningLead(lead);
+                              setAssignEmpId(salesReps.find(r => r.name === lead.assignedTo)?._id || salesReps[0]?._id || '');
+                              setAssignNotes('');
+                            }}
+                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                            title="Reassign to Another Employee"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <span className="font-bold text-slate-800 text-xs block">{lead.assignedTo || 'Unassigned'}</span>
-                        <button
-                          onClick={() => {
-                            setAssigningLead(lead);
-                            setAssignEmpId(salesReps.find(r => r.name === lead.assignedTo)?._id || salesReps[0]?._id || '');
-                            setAssignNotes('');
-                          }}
-                          className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                          title="Change Assigned Employee"
-                        >
-                          <UserCheck className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                            Unassigned
+                          </span>
+                          <button
+                            onClick={() => {
+                              setAssigningLead(lead);
+                              setAssignEmpId(salesReps[0]?._id || '');
+                              setAssignNotes('');
+                            }}
+                            className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 border border-blue-200/60"
+                            title="Assign to Sales Representative"
+                          >
+                            <UserCheck className="w-3 h-3" />
+                            <span>Assign</span>
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-5 py-4 text-right">
@@ -589,7 +817,8 @@ export const LeadsView: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -696,13 +925,53 @@ export const LeadsView: React.FC = () => {
                   <p className="text-xs font-bold text-slate-800 mt-1 truncate">{selectedLead.email || '—'}</p>
                 </div>
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Source & Channel</span>
+                  <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1">
+                    <span className="text-amber-700 font-bold">{selectedLead.source}</span>
+                    <span className="text-[10px] text-slate-400">({selectedLead.channel || 'B2B Portal'})</span>
+                  </p>
+                </div>
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Estimated Value</span>
                   <p className="text-xs font-bold text-slate-800 mt-1">₹{Number(selectedLead.estimatedValue || 0).toLocaleString('en-IN')}</p>
                 </div>
+                {selectedLead.productName && (
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Inquiry Product / Requirement</span>
+                    <p className="text-xs font-bold text-slate-900 mt-1">
+                      {selectedLead.productName}
+                      {selectedLead.quantity ? ` • Qty: ${selectedLead.quantity}` : ''}
+                    </p>
+                  </div>
+                )}
+                {(selectedLead.city || selectedLead.state) && (
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                    <p className="text-xs font-bold text-slate-800 mt-1">{[selectedLead.city, selectedLead.state, selectedLead.country].filter(Boolean).join(', ')}</p>
+                  </div>
+                )}
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lead Score</span>
                   <p className="text-xs font-bold text-blue-600 mt-1">{selectedLead.leadScore || 65} / 100</p>
                 </div>
+                <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/60">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-emerald-600" />
+                    <span>Lead Arrival Time</span>
+                  </span>
+                  <p className="text-xs font-black text-slate-900 mt-1">
+                    {getLeadArrivalLabel(selectedLead.createdAt).text}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                    {getLeadArrivalLabel(selectedLead.createdAt).fullDate}
+                  </p>
+                </div>
+                {selectedLead.sourceLeadId && (
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">External Source Reference ID</span>
+                    <p className="text-xs font-mono font-bold text-slate-700 mt-0.5">{selectedLead.sourceLeadId}</p>
+                  </div>
+                )}
               </div>
 
               {/* Quick Communication Actions */}
