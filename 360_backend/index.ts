@@ -3,7 +3,7 @@ import { createBackendApp } from './serverApp';
 
 dotenv.config();
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 5055;
 
 async function bootstrap() {
   try {

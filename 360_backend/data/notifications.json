@@ -25,5 +25,14 @@
     "type": "SALARY_PUBLISHED",
     "isRead": true,
     "createdAt": "2026-02-01T10:00:00.000Z"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Non' (Non) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-01T06:33:29.478Z",
+    "_id": "not_1788244409478_4srrw"
   }
 ]

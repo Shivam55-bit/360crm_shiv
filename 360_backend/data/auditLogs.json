@@ -313,5 +313,111 @@
     "timestamp": "2026-09-01T05:21:20.208Z",
     "createdAt": "2026-09-01T05:21:20.208Z",
     "_id": "aud_1788240080208_68ix3"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1788244391159_r9tpk",
+    "newData": {
+      "name": "Non",
+      "leadCode": "LD-2026-0033",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-01T06:33:11.162Z",
+    "createdAt": "2026-09-01T06:33:11.162Z",
+    "_id": "aud_1788244391162_k9qod"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1788244391159_r9tpk",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": ""
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-01T06:33:29.479Z",
+    "createdAt": "2026-09-01T06:33:29.479Z",
+    "_id": "aud_1788244409479_p99d2"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-01T06:33:53.049Z",
+    "createdAt": "2026-09-01T06:33:53.049Z",
+    "_id": "aud_1788244433049_a8iqu"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-01T09:42:28.637Z",
+    "createdAt": "2026-09-01T09:42:28.637Z",
+    "_id": "aud_1788255748637_zp42t"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-01T09:47:12.413Z",
+    "createdAt": "2026-09-01T09:47:12.413Z",
+    "_id": "aud_1788256032414_b03a6"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-01T09:47:12.536Z",
+    "createdAt": "2026-09-01T09:47:12.536Z",
+    "_id": "aud_1788256032536_ydqry"
+  },
+  {
+    "userId": "usr_superadmin",
+    "userName": "Priyanshu Agrawal",
+    "userRole": "SUPER_ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Priyanshu Agrawal (SUPER_ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-01T09:47:12.637Z",
+    "createdAt": "2026-09-01T09:47:12.637Z",
+    "_id": "aud_1788256032637_12xon"
   }
 ]

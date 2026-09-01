@@ -11,7 +11,8 @@
     "status": "ACTIVE",
     "avatar": "PA",
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-01T00:00:00.000Z"
+    "updatedAt": "2026-09-01T09:47:12.635Z",
+    "lastLogin": "2026-09-01T09:47:12.635Z"
   },
   {
     "_id": "usr_admin_main",
@@ -25,8 +26,8 @@
     "status": "ACTIVE",
     "avatar": "RS",
     "createdAt": "2026-01-05T00:00:00.000Z",
-    "updatedAt": "2026-08-31T10:06:58.336Z",
-    "lastLogin": "2026-08-31T10:06:58.336Z"
+    "updatedAt": "2026-09-01T09:47:12.534Z",
+    "lastLogin": "2026-09-01T09:47:12.533Z"
   },
   {
     "_id": "usr_admin_hr",
@@ -96,7 +97,7 @@
     "status": "ACTIVE",
     "avatar": "AS",
     "createdAt": "2026-01-20T00:00:00.000Z",
-    "updatedAt": "2026-08-29T11:32:45.741Z",
-    "lastLogin": "2026-08-29T11:32:45.741Z"
+    "updatedAt": "2026-09-01T09:47:12.338Z",
+    "lastLogin": "2026-09-01T09:47:12.338Z"
   }
 ]

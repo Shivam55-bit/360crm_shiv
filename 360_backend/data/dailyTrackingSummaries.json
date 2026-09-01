@@ -40,5 +40,24 @@
     "firstLocationAddress": "Noida Corporate Office, Sector 63",
     "lastLocationAddress": "Noida Corporate Office, Sector 63",
     "updatedAt": "2026-08-29T11:14:00.451Z"
+  },
+  {
+    "_id": "sum_emp_arjun_2026-09-01",
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "department": "Sales",
+    "date": "2026-09-01",
+    "checkInTime": "12:04 PM",
+    "totalWorkingMinutes": 0,
+    "totalTrackedMinutes": 1,
+    "totalFieldMinutes": 1,
+    "totalOfficeMinutes": 0,
+    "totalStopMinutes": 0,
+    "totalDistanceKm": 84.3,
+    "geofenceVisitsCount": 0,
+    "stopsCount": 20,
+    "firstLocationTime": "12:04 PM",
+    "lastLocationTime": "12:33 PM",
+    "updatedAt": "2026-09-01T07:03:13.691Z"
   }
 ]

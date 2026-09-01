@@ -320,5 +320,33 @@
     "performedBy": "TradeIndia Lead Sync Connector Gateway",
     "timestamp": "2026-09-01T04:52:29.787Z",
     "_id": "act_1788238349790_5k4ci"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788244391159_r9tpk",
+    "action": "CREATE",
+    "description": "Lead 'Non' (LD-2026-0033) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-01T06:33:11.160Z",
+    "_id": "act_1788244391160_6ivqd"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788244391159_r9tpk",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-01T06:33:29.478Z",
+    "_id": "act_1788244409478_eaas4"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788255591410_ssb5n",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (U V Varnish Coating Labels Buyer - U V Varnish Coating Labels)",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-01T09:39:51.394Z",
+    "_id": "act_1788255591415_eertc"
   }
 ]
