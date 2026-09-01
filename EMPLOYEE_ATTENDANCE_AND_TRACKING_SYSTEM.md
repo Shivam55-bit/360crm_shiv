@@ -400,6 +400,99 @@ Content-Type: application/json
 
 ---
 
+### 4.8 Live Field & Work Location Telemetry Widget (`EmployeeLocationTrackerWidget.tsx`)
+
+#### 🖼️ Widget Component Breakdown (From UI Screenshot):
+
+```
++----------------------------------------------------------------------------------------------------+
+| 📍 Field & Work Location Status  • Active                                        [ 🔄 Sync Now ]    |
+|    Broadcasting for shift (09:30 - 18:30)                                                          |
+| +--------------------------------+--------------------------------+------------------------------+ |
+| | Last Update                    | GPS Accuracy                   | Device Battery               | |
+| | Awaiting signal / 11:45:20 AM  | ±8m / N/A                      | 🔋 42% (Charging)            | |
+| +--------------------------------+--------------------------------+------------------------------+ |
+|                                                                                                    |
+| ⚠️ [ Location access user denied geolocation ]  <-- (Permission Error State)                       |
+|                                                                                                    |
+| 🛡️ Privacy Protection: No off-hours tracking                              [ Consent & Privacy Policy ] |
++----------------------------------------------------------------------------------------------------+
+```
+
+#### 🛠️ How Each Element of This Widget Works:
+
+1. **Title & Status Indicator (`Field & Work Location Status • Active`)**:
+   - **Active (Green Dot):** App is actively broadcasting GPS coordinates during authorized shift hours (*e.g., 09:30 - 18:30*).
+   - **Paused (Gray Dot):** Shift ended, employee is clocked out, or break is active.
+2. **Shift Window (`Broadcasting for shift (09:30 - 18:30)`)**:
+   - Pulled directly from `GET /api/employee-tracking/my-status`. Ensures employee knows location is tracked **only during working hours**.
+3. **`🔄 Sync Now` Button**:
+   - Forces an immediate GPS location fix via `navigator.geolocation.getCurrentPosition` and instantly pushes a telemetry ping to `POST /api/employee-tracking/location`.
+4. **Telemetry Metric Cards**:
+   - **Last Update:** Timestamp when the server last acknowledged receiving a GPS coordinate ping (*e.g. `11:45:20 AM`*). Shows `Awaiting signal` before the first ping.
+   - **GPS Accuracy:** Displays hardware satellite precision in meters (*e.g., `±8m`*). Shows `N/A` if location permission is disabled.
+   - **Device Battery:** Uses HTML5 Web Battery API (`navigator.getBattery()`) or Mobile Native API to track battery percentage (`42%`) and charging state (`⚡ Charging`).
+5. **Red Error Banner (`Location access user denied geolocation`)**:
+   - **Why this happens:** The browser or mobile operating system blocked Location access (`GeolocationPositionError.PERMISSION_DENIED`, Error Code 1).
+   - **How to fix:**
+     - **In Web Browser:** Click the lock icon in the browser address bar -> Site Settings -> Set **Location** to **Allow**, then click **Sync Now**.
+     - **In Android/iOS App:** Open Phone Settings -> Apps -> 360CRM -> Permissions -> Location -> Select **"Allow only while using the app"** or **"Allow all the time"**.
+6. **Privacy Protection Guarantee (`🛡️ Privacy Protection: No off-hours tracking`)**:
+   - **Zero Off-Hours Tracking:** When an employee clocks out or the clock reaches `18:30`, the telemetry engine automatically shuts down all background location listeners.
+   - **Consent Agreement Modal:** Triggered on first login via `POST /api/employee-tracking/my-consent`.
+
+---
+
+#### 🔌 Associated Widget REST APIs:
+
+#### A. Get My Location Tracking Status & Policy
+- **Endpoint:** `GET /api/employee-tracking/my-status`
+- **Method:** `GET`
+- **Auth:** Bearer JWT Token
+- **Success Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "data": {
+    "hasProfile": true,
+    "isTrackingActive": true,
+    "trackingMode": "ACTIVE_WORKING_HOURS",
+    "consentStatus": "ACCEPTED",
+    "shiftStart": "09:30",
+    "shiftEnd": "18:30",
+    "updateFrequencySeconds": 60,
+    "latestLocation": {
+      "latitude": 23.0225,
+      "longitude": 72.5714,
+      "accuracy": 8,
+      "battery": 42,
+      "isCharging": false,
+      "recordedAt": "2026-09-01T06:15:20.000Z"
+    }
+  }
+}
+```
+
+#### B. Post User Privacy Consent
+- **Endpoint:** `POST /api/employee-tracking/my-consent`
+- **Method:** `POST`
+- **Request Body:**
+```json
+{
+  "consent": "ACCEPTED",
+  "deviceInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
+}
+```
+- **Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "message": "Tracking consent recorded successfully."
+}
+```
+
+---
+
 ## 5. Anti-Fraud & Security Validation Rules
 
 1. **Haversine Distance Formula Calculation**:
