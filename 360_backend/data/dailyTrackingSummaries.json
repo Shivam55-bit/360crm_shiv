@@ -59,5 +59,24 @@
     "firstLocationTime": "12:04 PM",
     "lastLocationTime": "12:33 PM",
     "updatedAt": "2026-09-01T07:03:13.691Z"
+  },
+  {
+    "_id": "sum_emp_arjun_2026-09-02",
+    "employeeId": "emp_arjun",
+    "employeeName": "Arjun Singh",
+    "department": "Sales",
+    "date": "2026-09-02",
+    "checkInTime": "10:51 AM",
+    "totalWorkingMinutes": 0,
+    "totalTrackedMinutes": 1,
+    "totalFieldMinutes": 0,
+    "totalOfficeMinutes": 1,
+    "totalStopMinutes": 0,
+    "totalDistanceKm": 873.5,
+    "geofenceVisitsCount": 4,
+    "stopsCount": 0,
+    "firstLocationTime": "10:51 AM",
+    "lastLocationTime": "10:47 AM",
+    "updatedAt": "2026-09-02T05:22:35.574Z"
   }
 ]

@@ -6,7 +6,9 @@ import { recordAuditLog } from '../middleware/audit';
 import {
   LeadDoc, CustomerDoc, FollowUpDoc, CallLogDoc, TaskDoc,
   QuotationDoc, SalesOrderDoc, AttendanceDoc, SalaryDoc,
-  LeaveDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc
+  LeaveDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc,
+  FieldVisitProofDoc, DocumentAttachmentDoc, VoiceNoteDoc, SafetyEventDoc,
+  ManagerFeedbackDoc, TravelExpenseDraftDoc, ShiftHandoverDoc
 } from '../database/types';
 import {
   validateAttendanceSecurity,
@@ -14,6 +16,8 @@ import {
   clockOut as hrClockOut,
   toggleBreak as hrToggleBreak
 } from './peopleControllers';
+import { FieldIntelligenceService } from '../services/fieldIntelligence.service';
+import { GeofenceService } from '../tracking/geofence.service';
 
 function parseAttendanceTime(value?: string) {
   if (!value) return null;
@@ -1193,6 +1197,511 @@ export async function markNotificationRead(req: AuthenticatedRequest, res: Respo
     }
 
     return res.json({ success: true, message: 'Notification marked as read' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 16. EMPLOYEE SAFETY & SOS (MODULE 25)
+// ----------------------------------------------------
+export async function postSafetySos(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { latitude, longitude, accuracy, message, address } = req.body;
+
+    const event = db.safetyEvents.insertOne({
+      employeeId,
+      employeeName,
+      type: 'SOS',
+      latitude: latitude !== undefined ? Number(latitude) : undefined,
+      longitude: longitude !== undefined ? Number(longitude) : undefined,
+      accuracy: accuracy !== undefined ? Number(accuracy) : undefined,
+      address,
+      message: message || 'EMERGENCY SOS Triggered by employee',
+      status: 'ACTIVE',
+      timestamp: new Date().toISOString()
+    });
+
+    // Notify all Admins and Managers
+    const adminUsers = db.users.find(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'MANAGER');
+    for (const adm of adminUsers) {
+      db.notifications.insertOne({
+        userId: adm._id,
+        title: `🚨 SOS EMERGENCY ALERT: ${employeeName}`,
+        message: `${employeeName} triggered an emergency SOS: "${message || 'Immediate assistance required.'}"`,
+        type: 'ADMIN_ALERT',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    recordAuditLog(req, 'CREATE', 'safetyEvents', 'SOS Emergency Alert', event._id, undefined, { employeeName, message });
+
+    return res.status(201).json({
+      success: true,
+      message: '🚨 Emergency SOS recorded and escalated to management team.',
+      data: event
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function postSafetyCheckIn(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { latitude, longitude, accuracy, message } = req.body;
+
+    const event = db.safetyEvents.insertOne({
+      employeeId,
+      employeeName,
+      type: 'CHECK_IN',
+      latitude: latitude !== undefined ? Number(latitude) : undefined,
+      longitude: longitude !== undefined ? Number(longitude) : undefined,
+      accuracy: accuracy !== undefined ? Number(accuracy) : undefined,
+      message: message || 'Employee checked in as Safe.',
+      status: 'RESOLVED',
+      timestamp: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Safety check-in recorded successfully.',
+      data: event
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getSafetyEvents(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const events = db.safetyEvents.find(e => e.employeeId === employeeId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return res.json({ success: true, data: events });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 17. FIELD VISIT PROOF & CUSTOMER SIGNATURE (MODULES 14 & 15)
+// ----------------------------------------------------
+export async function postTaskProof(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { id } = req.params; // taskId
+    const {
+      leadId,
+      customerId,
+      latitude,
+      longitude,
+      accuracy,
+      selfieUrl,
+      sitePhotoUrls,
+      customerSignatureUrl,
+      signedByName,
+      notes,
+      deviceId
+    } = req.body;
+
+    const task = db.tasks.findById(id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    // Determine verification status
+    let verificationStatus: 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'REVIEW_REQUIRED' = 'VERIFIED';
+    if (!customerSignatureUrl && (!sitePhotoUrls || sitePhotoUrls.length === 0)) {
+      verificationStatus = 'REVIEW_REQUIRED';
+    } else if (!customerSignatureUrl || !sitePhotoUrls || sitePhotoUrls.length === 0) {
+      verificationStatus = 'PARTIALLY_VERIFIED';
+    }
+
+    const proof = db.fieldVisitProofs.insertOne({
+      employeeId,
+      employeeName,
+      taskId: id,
+      leadId: leadId || (task.relatedTo && typeof task.relatedTo === 'object' && task.relatedTo.type === 'LEAD' ? task.relatedTo.id : undefined),
+      customerId: customerId || (task.relatedTo && typeof task.relatedTo === 'object' && task.relatedTo.type === 'CUSTOMER' ? task.relatedTo.id : undefined),
+      latitude: Number(latitude) || 0,
+      longitude: Number(longitude) || 0,
+      accuracy: accuracy !== undefined ? Number(accuracy) : undefined,
+      selfieUrl,
+      sitePhotoUrls: sitePhotoUrls || [],
+      customerSignatureUrl,
+      signedByName,
+      notes,
+      deviceId,
+      verificationStatus,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    // Mark task completed
+    db.tasks.updateById(id, {
+      status: 'COMPLETED',
+      completedAt: new Date().toISOString(),
+      notes: (task.notes ? task.notes + ' | ' : '') + `Completed with visit proof ID ${proof._id}`
+    });
+
+    // Auto-expire dynamic task geofence
+    GeofenceService.expireTaskGeofence(id);
+
+    recordAuditLog(req, 'CREATE', 'fieldVisitProofs', 'Task Visit Proof Submitted', proof._id, undefined, { taskId: id, verificationStatus });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Field visit proof submitted and task marked completed.',
+      data: proof
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function postTaskSignature(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { id } = req.params;
+    const { customerSignatureUrl, signedByName, notes } = req.body;
+
+    if (!customerSignatureUrl) {
+      return res.status(400).json({ success: false, message: 'Customer signature payload is required.' });
+    }
+
+    const proof = db.fieldVisitProofs.insertOne({
+      employeeId,
+      employeeName,
+      taskId: id,
+      latitude: 0,
+      longitude: 0,
+      customerSignatureUrl,
+      signedByName: signedByName || 'Customer',
+      notes: notes || 'Customer acknowledgment signature attached',
+      verificationStatus: 'VERIFIED',
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Customer signature uploaded successfully.',
+      data: proof
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 18. DOCUMENT ATTACHMENTS & VOICE NOTES (MODULES 16 & 17)
+// ----------------------------------------------------
+export async function postDocumentAttachment(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { entityType, entityId, documentType, fileUrl, fileName, fileSize, mimeType, notes } = req.body;
+
+    if (!fileUrl || !fileName || !documentType) {
+      return res.status(400).json({ success: false, message: 'fileUrl, fileName, and documentType are required.' });
+    }
+
+    const doc = db.documentAttachments.insertOne({
+      employeeId,
+      employeeName,
+      entityType: entityType || 'GENERAL',
+      entityId,
+      documentType,
+      fileUrl,
+      fileName,
+      fileSize: fileSize !== undefined ? Number(fileSize) : undefined,
+      mimeType,
+      notes,
+      verificationStatus: 'PENDING',
+      uploadedAt: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Document attached successfully.',
+      data: doc
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getDocumentAttachments(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const { entityType, entityId } = req.query;
+
+    let docs = db.documentAttachments.find(d => d.employeeId === employeeId);
+    if (entityType && typeof entityType === 'string') {
+      docs = docs.filter(d => d.entityType === entityType);
+    }
+    if (entityId && typeof entityId === 'string') {
+      docs = docs.filter(d => d.entityId === entityId);
+    }
+
+    return res.json({ success: true, data: docs });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function postVoiceNote(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { leadId, customerId, taskId, followUpId, audioUrl, durationSeconds, transcription, notes } = req.body;
+
+    if (!audioUrl) {
+      return res.status(400).json({ success: false, message: 'audioUrl is required.' });
+    }
+
+    const voiceNote = db.voiceNotes.insertOne({
+      employeeId,
+      employeeName,
+      leadId,
+      customerId,
+      taskId,
+      followUpId,
+      audioUrl,
+      durationSeconds: durationSeconds !== undefined ? Number(durationSeconds) : undefined,
+      transcription,
+      notes,
+      createdAt: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Voice note uploaded successfully.',
+      data: voiceNote
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getVoiceNotes(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const { leadId, taskId } = req.query;
+
+    let notes = db.voiceNotes.find(v => v.employeeId === employeeId);
+    if (leadId && typeof leadId === 'string') {
+      notes = notes.filter(v => v.leadId === leadId);
+    }
+    if (taskId && typeof taskId === 'string') {
+      notes = notes.filter(v => v.taskId === taskId);
+    }
+
+    return res.json({ success: true, data: notes });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 19. WORKDAY TIMELINE & DAILY STORY (MODULES 22 & 23)
+// ----------------------------------------------------
+export async function getWorkdayTimeline(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+
+    const timeline = FieldIntelligenceService.getWorkdayTimeline(employeeId, date);
+    return res.json({ success: true, data: timeline });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getWorkdayStory(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+
+    const story = FieldIntelligenceService.getDailyWorkdayStory(employeeId, date);
+    return res.json({ success: true, data: story });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 20. SHIFT HANDOVER (MODULE 24)
+// ----------------------------------------------------
+export async function postShiftHandover(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { handoverNotes, pendingLeadIds, pendingTaskIds, followUpIds, handoverToEmployeeId, handoverToEmployeeName } = req.body;
+
+    if (!handoverNotes) {
+      return res.status(400).json({ success: false, message: 'handoverNotes is required.' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const handover = db.shiftHandovers.insertOne({
+      employeeId,
+      employeeName,
+      date: today,
+      handoverNotes,
+      pendingLeadIds: pendingLeadIds || [],
+      pendingTaskIds: pendingTaskIds || [],
+      followUpIds: followUpIds || [],
+      handoverToEmployeeId,
+      handoverToEmployeeName,
+      createdAt: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '✅ Shift handover notes recorded successfully.',
+      data: handover
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getShiftHandovers(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const handovers = db.shiftHandovers.find(h => h.employeeId === employeeId || h.handoverToEmployeeId === employeeId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return res.json({ success: true, data: handovers });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 21. NEARBY ASSIGNED WORK (MODULE 32)
+// ----------------------------------------------------
+export async function getNearbyWork(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const { lat, lng, radius } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, message: 'Latitude (lat) and Longitude (lng) query parameters are required.' });
+    }
+
+    const nearby = FieldIntelligenceService.findNearbyAssignedWork({
+      employeeId,
+      latitude: parseFloat(String(lat)),
+      longitude: parseFloat(String(lng)),
+      maxRadiusKm: radius ? parseFloat(String(radius)) : 30
+    });
+
+    return res.json({ success: true, data: nearby });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 22. TRAVEL EXPENSES (MODULES 33 & 34)
+// ----------------------------------------------------
+export async function getTravelExpenses(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const claims = db.travelExpenseDrafts.find(e => e.employeeId === employeeId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return res.json({ success: true, data: claims });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function postTravelExpense(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId, employeeName } = getEmpContext(req);
+    const { date, distanceKm, ratePerKm, notes, manualAdjustment, status, receiptUrls } = req.body;
+
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const draft = FieldIntelligenceService.generateTravelExpenseDraft({
+      employeeId,
+      employeeName,
+      date: targetDate,
+      ratePerKm: ratePerKm !== undefined ? Number(ratePerKm) : undefined
+    });
+
+    if (manualAdjustment !== undefined || notes || status || receiptUrls) {
+      const updated = db.travelExpenseDrafts.updateById(draft._id, {
+        distanceKm: distanceKm !== undefined ? Number(distanceKm) : draft.distanceKm,
+        manualAdjustment: manualAdjustment !== undefined ? Number(manualAdjustment) : draft.manualAdjustment,
+        totalClaimAmount: (distanceKm !== undefined ? Number(distanceKm) * (ratePerKm || draft.ratePerKm) : draft.calculatedAmount) + (manualAdjustment || 0),
+        notes: notes || draft.notes,
+        status: status || draft.status,
+        receiptUrls: receiptUrls || draft.receiptUrls,
+        updatedAt: new Date().toISOString()
+      });
+      return res.status(201).json({ success: true, message: 'Travel expense updated', data: updated });
+    }
+
+    return res.status(201).json({ success: true, message: 'Travel expense draft ready for submission', data: draft });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 23. AI-READY FOLLOW-UP SUGGESTIONS (MODULE 30 & 31)
+// ----------------------------------------------------
+export async function getAIFollowUpSuggestions(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params; // leadId
+    const suggestions = FieldIntelligenceService.getFollowUpSuggestions(id);
+    return res.json({ success: true, data: suggestions });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// ----------------------------------------------------
+// 24. MANAGER FEEDBACK (MODULE 29)
+// ----------------------------------------------------
+export async function postManagerFeedback(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, userName } = getEmpContext(req);
+    const { employeeId, entityType, entityId, rating, remarks, verificationStatus } = req.body;
+
+    if (!employeeId || !entityType || !entityId || !remarks) {
+      return res.status(400).json({ success: false, message: 'employeeId, entityType, entityId, and remarks are required.' });
+    }
+
+    const feedback = db.managerFeedbacks.insertOne({
+      employeeId,
+      managerId: userId,
+      managerName: userName,
+      entityType,
+      entityId,
+      rating: rating !== undefined ? Number(rating) : undefined,
+      remarks,
+      verificationStatus: verificationStatus || 'APPROVED',
+      createdAt: new Date().toISOString()
+    });
+
+    return res.status(201).json({ success: true, message: 'Manager feedback recorded', data: feedback });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function getManagerFeedback(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { employeeId } = getEmpContext(req);
+    const feedback = db.managerFeedbacks.find(f => f.employeeId === employeeId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return res.json({ success: true, data: feedback });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }

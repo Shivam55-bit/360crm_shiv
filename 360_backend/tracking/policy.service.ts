@@ -104,6 +104,38 @@ export class TrackingPolicyService {
           mode: effectiveMode
         };
 
+      case 'FIELD_TASK_ONLY': {
+        // Only track when employee has an active in-progress task or open field visit
+        const activeTask = db.tasks?.findOne(
+          t => (t.assignedTo === employee._id || t.assignedToId === employee._id || t.assignedTo === employee.name) &&
+               (t.status === 'IN_PROGRESS' || (t as any).status === 'ARRIVED')
+        );
+        if (!activeTask) {
+          return {
+            isAllowed: false,
+            reason: 'Tracking is permitted only while executing an active assigned field task.',
+            mode: effectiveMode
+          };
+        }
+        break;
+      }
+
+      case 'MANUAL_WORK_SESSION': {
+        const todayStr = checkTime.toISOString().split('T')[0];
+        const todayAttendance = db.attendance?.findOne(
+          a => (a.employeeId === employee._id || a.employeeId === employee.userId || a.employeeName.toLowerCase() === employee.name.toLowerCase()) &&
+               a.date === todayStr
+        );
+        if (!todayAttendance || !todayAttendance.checkIn || todayAttendance.checkOut || todayAttendance.status === 'ON_BREAK') {
+          return {
+            isAllowed: false,
+            reason: 'Tracking is active only during a manually started active work session.',
+            mode: effectiveMode
+          };
+        }
+        break;
+      }
+
       case 'FIELD_ONLY':
         if (!employee.isFieldEmployee) {
           return {
@@ -118,7 +150,8 @@ export class TrackingPolicyService {
       case 'ACTIVE_SHIFT': {
         const todayStr = checkTime.toISOString().split('T')[0];
         const todayAttendance = db.attendance?.findOne(
-          a => a.employeeId === employee._id && a.date === todayStr
+          a => (a.employeeId === employee._id || a.employeeId === employee.userId || a.employeeName.toLowerCase() === employee.name.toLowerCase()) &&
+               a.date === todayStr
         );
 
         if (!todayAttendance || !todayAttendance.checkIn || todayAttendance.checkOut) {

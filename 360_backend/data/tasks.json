@@ -24,5 +24,32 @@
     "relatedTo": "Monthly Review",
     "createdBy": "Rohan Sharma (Admin)",
     "createdAt": "2026-02-16T09:00:00.000Z"
+  },
+  {
+    "title": "Emergency Generator Inspection",
+    "description": "Check oil level and voltage output.",
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "priority": "HIGH",
+    "dueDate": "2026-09-02",
+    "status": "PENDING",
+    "createdBy": "Arjun Singh",
+    "createdAt": "2026-09-02T05:22:12.402Z",
+    "_id": "tas_1788326532402_5qijr"
+  },
+  {
+    "title": "Emergency Generator Inspection",
+    "description": "Check oil level and voltage output.",
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "priority": "HIGH",
+    "dueDate": "2026-09-02",
+    "status": "COMPLETED",
+    "createdBy": "Arjun Singh",
+    "createdAt": "2026-09-02T05:22:35.531Z",
+    "_id": "tas_1788326555531_4rrxd",
+    "completedAt": "2026-09-02T05:22:35.560Z",
+    "notes": "Completed with visit proof ID fie_1788326555560_uzmpv",
+    "updatedAt": "2026-09-02T05:22:35.560Z"
   }
 ]

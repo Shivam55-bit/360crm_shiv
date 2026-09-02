@@ -883,8 +883,10 @@ export interface IntegrationLogDoc {
 
 export type TrackingModeType =
   | 'ATTENDANCE_ONLY'
-  | 'WORKING_HOURS'
   | 'ACTIVE_SHIFT'
+  | 'WORKING_HOURS'
+  | 'FIELD_TASK_ONLY'
+  | 'MANUAL_WORK_SESSION'
   | 'FIELD_ONLY'
   | 'MANUAL';
 
@@ -954,12 +956,17 @@ export interface LocationHistoryDoc {
   speed?: number;
   speedKmh?: number;
   heading?: number;
+  altitude?: number;
+  activity?: 'STILL' | 'WALKING' | 'IN_VEHICLE' | string;
   batteryLevel?: number;
   recordedAt: string; // ISO
   receivedAt: string; // ISO
   source: 'GPS' | 'NETWORK' | 'WEB_BROWSER' | 'MOBILE_APP' | 'OFFLINE_SYNC';
   shiftId?: string;
+  trackingSessionId?: string;
   attendanceId?: string;
+  taskId?: string;
+  customerId?: string;
   geofenceId?: string;
   geofenceName?: string;
   isInsideGeofence: boolean;
@@ -969,13 +976,14 @@ export interface LocationHistoryDoc {
   stopDurationMinutes?: number;
   deviceId?: string;
   anomalyFlag?: string;
+  anomalyFlags?: string[];
 }
 
 export interface GeofenceDoc {
   _id: string;
   name: string;
   code: string;
-  category: 'OFFICE' | 'WAREHOUSE' | 'BRANCH' | 'CLIENT_SITE' | 'PROJECT_SITE';
+  category: 'OFFICE' | 'WAREHOUSE' | 'BRANCH' | 'PLANT' | 'CLIENT_SITE' | 'CUSTOMER' | 'PROJECT_SITE' | 'PROJECT' | 'TASK' | 'TEMPORARY';
   latitude: number;
   longitude: number;
   radiusMeters: number;
@@ -984,6 +992,13 @@ export interface GeofenceDoc {
   state?: string;
   assignedDepartments?: string[];
   assignedEmployees?: string[];
+  taskId?: string;
+  customerId?: string;
+  leadId?: string;
+  employeeId?: string;
+  validFrom?: string;
+  validUntil?: string;
+  isExpired?: boolean;
   alertOnEntry: boolean;
   alertOnExit: boolean;
   enabled: boolean;
@@ -1004,24 +1019,40 @@ export interface GeofenceEventDoc {
   latitude: number;
   longitude: number;
   accuracy: number;
+  taskId?: string;
+  customerId?: string;
 }
 
 export interface TrackingPolicyDoc {
   _id: string; // 'tracking_policy_config'
   enabled: boolean;
+  trackingEnabled?: boolean;
   trackingMode: TrackingModeType;
-  updateFrequencySeconds: number; // e.g. 60
-  stationaryFrequencySeconds: number; // e.g. 300
-  minAcceptableAccuracyMeters: number; // e.g. 100
-  maxAllowableSpeedKmh: number; // e.g. 140 (for jump filter)
-  stopRadiusMeters: number; // e.g. 60
-  stopMinDurationMinutes: number; // e.g. 10
-  storeRouteHistory: boolean;
-  routeRetentionDays: number; // e.g. 30
-  enableGeofencing: boolean;
-  notifyEmployeeWhenTracking: boolean;
+  requireConsent?: boolean;
   requireEmployeeConsent: boolean;
+  requireLocationClockIn?: boolean;
+  requireLocationClockOut?: boolean;
+  requireSelfieClockIn?: boolean;
+  requireSelfieClockOut?: boolean;
+  maxGpsAccuracyMeters?: number;
+  minAcceptableAccuracyMeters: number;
+  movingUpdateFrequencySeconds?: number;
+  stationaryUpdateFrequencySeconds?: number;
+  updateFrequencySeconds: number;
+  stationaryFrequencySeconds: number;
+  maxAllowableSpeedKmh: number;
+  stopRadiusMeters: number;
+  stopMinDurationMinutes: number;
+  storeRouteHistory: boolean;
+  routeHistoryEnabled?: boolean;
+  routeRetentionDays: number;
+  locationRetentionDays?: number;
+  enableGeofencing: boolean;
+  geofenceEnabled?: boolean;
+  anomalyDetectionEnabled?: boolean;
+  notifyEmployeeWhenTracking: boolean;
   allowOfflineQueue: boolean;
+  offlineQueueEnabled?: boolean;
   maxOfflineQueueItems: number;
   updatedAt: string;
   updatedBy: string;
@@ -1041,12 +1072,16 @@ export interface DailyTrackingSummaryDoc {
   totalOfficeMinutes: number;
   totalStopMinutes: number;
   totalDistanceKm: number;
+  clientSiteDurationMinutes?: number;
   geofenceVisitsCount: number;
   stopsCount: number;
   firstLocationTime?: string;
   lastLocationTime?: string;
   firstLocationAddress?: string;
   lastLocationAddress?: string;
+  visitedGeofences?: string[];
+  routeStart?: string;
+  routeEnd?: string;
   updatedAt: string;
 }
 
@@ -1060,4 +1095,124 @@ export interface TrackingAlertDoc {
   details?: any;
   timestamp: string;
   acknowledged: boolean;
+}
+
+export interface FieldVisitProofDoc {
+  _id: string;
+  employeeId: string;
+  employeeName?: string;
+  taskId?: string;
+  leadId?: string;
+  customerId?: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  geofenceId?: string;
+  distanceFromExpectedSite?: number;
+  selfieUrl?: string;
+  sitePhotoUrls?: string[];
+  customerSignatureUrl?: string;
+  signedByName?: string;
+  notes?: string;
+  timestamp: string;
+  deviceId?: string;
+  verificationStatus: 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'REVIEW_REQUIRED';
+  createdAt?: string;
+}
+
+export interface DocumentAttachmentDoc {
+  _id: string;
+  employeeId: string;
+  employeeName?: string;
+  entityType: 'LEAD' | 'CUSTOMER' | 'TASK' | 'FOLLOWUP' | 'QUOTATION' | 'EXPENSE' | 'GENERAL';
+  entityId?: string;
+  documentType: 'VISITING_CARD' | 'PURCHASE_ORDER' | 'SITE_DOCUMENT' | 'ID_DOCUMENT' | 'CHEQUE_IMAGE' | 'EXPENSE_RECEIPT' | 'OTHER';
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  notes?: string;
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  uploadedAt: string;
+}
+
+export interface VoiceNoteDoc {
+  _id: string;
+  employeeId: string;
+  employeeName?: string;
+  leadId?: string;
+  customerId?: string;
+  taskId?: string;
+  followUpId?: string;
+  audioUrl: string;
+  durationSeconds?: number;
+  transcription?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface SafetyEventDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  type: 'SOS' | 'CHECK_IN' | 'SAFE_ALERT';
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number;
+  address?: string;
+  message?: string;
+  status: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
+  resolvedAt?: string;
+  timestamp: string;
+}
+
+export interface ManagerFeedbackDoc {
+  _id: string;
+  employeeId: string;
+  employeeName?: string;
+  managerId: string;
+  managerName: string;
+  entityType: 'TASK' | 'VISIT' | 'LEAD' | 'PERFORMANCE';
+  entityId: string;
+  rating?: number; // 1 to 5
+  remarks: string;
+  verificationStatus?: 'APPROVED' | 'NEEDS_REVISION' | 'REJECTED';
+  createdAt: string;
+}
+
+export interface TravelExpenseDraftDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  date: string; // YYYY-MM-DD
+  distanceKm: number;
+  ratePerKm: number;
+  calculatedAmount: number;
+  manualAdjustment?: number;
+  totalClaimAmount: number;
+  notes?: string;
+  routeStart?: string;
+  routeEnd?: string;
+  receiptUrls?: string[];
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ShiftHandoverDoc {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  date: string; // YYYY-MM-DD
+  handoverNotes: string;
+  pendingLeadIds?: string[];
+  pendingTaskIds?: string[];
+  followUpIds?: string[];
+  handoverToEmployeeId?: string;
+  handoverToEmployeeName?: string;
+  createdAt: string;
 }

@@ -286,8 +286,8 @@ export function validateAttendanceSecurity(selfie?: string, location?: any, mode
 
   // 2. Location & Geofencing Policy Enforcement
   if (isLocationRequired) {
-    const lat = typeof location?.lat === 'number' ? location.lat : parseFloat(String(location?.lat));
-    const lng = typeof location?.lng === 'number' ? location.lng : parseFloat(String(location?.lng));
+    const lat = typeof location?.lat === 'number' ? location.lat : (typeof location?.latitude === 'number' ? location.latitude : parseFloat(String(location?.lat || location?.latitude)));
+    const lng = typeof location?.lng === 'number' ? location.lng : (typeof location?.longitude === 'number' ? location.longitude : parseFloat(String(location?.lng || location?.longitude)));
 
     if (!location || isNaN(lat) || isNaN(lng)) {
       return {
@@ -345,11 +345,14 @@ export function validateAttendanceSecurity(selfie?: string, location?: any, mode
     }
   }
 
+  const parsedLat = typeof location?.lat === 'number' ? location.lat : (typeof location?.latitude === 'number' ? location.latitude : parseFloat(String(location?.lat || location?.latitude)));
+  const parsedLng = typeof location?.lng === 'number' ? location.lng : (typeof location?.longitude === 'number' ? location.longitude : parseFloat(String(location?.lng || location?.longitude)));
+
   return {
     valid: true,
-    verifiedLocation: (location && typeof location.lat === 'number' && typeof location.lng === 'number') ? {
-      lat: location.lat,
-      lng: location.lng,
+    verifiedLocation: (location && !isNaN(parsedLat) && !isNaN(parsedLng)) ? {
+      lat: parsedLat,
+      lng: parsedLng,
       accuracy: location.accuracy,
       address: location.address || 'Geo-stamped check-in'
     } : undefined
@@ -367,17 +370,24 @@ export async function clockIn(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Employee identification is required' });
     }
 
+    const loc = location || (req.body.latitude !== undefined && req.body.longitude !== undefined ? {
+      lat: req.body.latitude,
+      lng: req.body.longitude,
+      accuracy: req.body.accuracy,
+      address: req.body.address
+    } : undefined);
+
     const settings = db.getAttendanceSecurityConfig();
 
     // Validate against Super Admin Security Policy
-    const securityCheck = validateAttendanceSecurity(selfie, location, 'IN');
+    const securityCheck = validateAttendanceSecurity(selfie, loc, 'IN');
     if (!securityCheck.valid) {
       return res.status(403).json({ success: false, message: securityCheck.message });
     }
 
     const today = new Date().toISOString().split('T')[0];
     const checkInTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const finalLocation = securityCheck.verifiedLocation || location || undefined;
+    const finalLocation = securityCheck.verifiedLocation || loc || undefined;
 
     const clockInVerification = {
       selfieRequired: settings.requireSelfieClockIn ?? settings.requireSelfie,
@@ -410,39 +420,22 @@ export async function clockIn(req: AuthenticatedRequest, res: Response) {
         });
       }
 
-      // If re-clocking or updating today
       const updated = db.attendance.updateById(existing._id, {
         checkIn: checkInTime,
         checkOut: '',
         status: 'PRESENT',
-        remarks: remarks || existing.remarks || 'Clocked in via Verified Mobile/Desk Station',
+        remarks: remarks || existing.remarks,
         selfieCheckIn: selfie || existing.selfieCheckIn,
-        selfieCheckOut: '',
         locationCheckIn: finalLocation || existing.locationCheckIn,
-        locationCheckOut: undefined,
         clockInVerification,
-        clockOutVerification: undefined,
         breaks: [],
         workHours: 0,
-        totalAttendanceMinutes: 0,
-        totalWorkingMinutes: 0,
-        totalBreakMinutes: 0,
-        totalActiveMinutes: 0,
-        totalIdleMinutes: 0,
-        activeRatio: 100,
         updatedAt: new Date().toISOString()
-      });
-
-      recordAuditLog(req, 'CREATE', 'attendance', 'Attendance ClockIn', existing._id, undefined, {
-        employeeName: empName,
-        checkIn: checkInTime,
-        hasSelfie: !!selfie,
-        location: finalLocation
       });
 
       return res.json({
         success: true,
-        message: `✅ Shift Started! Verified at ${checkInTime}${finalLocation?.matchedLocationName ? ` [${finalLocation.matchedLocationName}]` : ''}`,
+        message: `✅ Shift Started! Verified at ${checkInTime} [${finalLocation?.matchedLocationName || 'Office'}]`,
         data: updated
       });
     }
@@ -454,32 +447,24 @@ export async function clockIn(req: AuthenticatedRequest, res: Response) {
       checkIn: checkInTime,
       checkOut: '',
       status: 'PRESENT',
-      remarks: remarks || 'Clocked in with verified security stamp',
+      remarks: remarks || '',
       selfieCheckIn: selfie || '',
       locationCheckIn: finalLocation,
       clockInVerification,
       breaks: [],
       workHours: 0,
-      totalAttendanceMinutes: 0,
-      totalWorkingMinutes: 0,
-      totalBreakMinutes: 0,
-      totalActiveMinutes: 0,
-      totalIdleMinutes: 0,
-      activeRatio: 100,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date().toISOString()
     });
 
-    recordAuditLog(req, 'CREATE', 'attendance', 'Attendance ClockIn', newRecord._id, undefined, {
+    recordAuditLog(req, 'CREATE', 'attendance', 'Employee Clock In Verified', newRecord._id, undefined, {
       employeeName: empName,
       checkIn: checkInTime,
-      hasSelfie: !!selfie,
-      location: finalLocation
+      location: finalLocation?.matchedLocationName
     });
 
     return res.status(201).json({
       success: true,
-      message: `✅ Shift Started! Verified at ${checkInTime}${finalLocation?.matchedLocationName ? ` [${finalLocation.matchedLocationName}]` : ''}`,
+      message: `✅ Shift Started! Verified at ${checkInTime} [${finalLocation?.matchedLocationName || 'Office'}]`,
       data: newRecord
     });
   } catch (err: any) {
@@ -490,25 +475,32 @@ export async function clockIn(req: AuthenticatedRequest, res: Response) {
 // EMPLOYEE CLOCK-OUT
 export async function clockOut(req: AuthenticatedRequest, res: Response) {
   try {
-    const { employeeId, selfie, location, remarks } = req.body;
+    const { employeeId, employeeName, selfie, location, remarks } = req.body;
     const empId = employeeId || (req.user as any)?.employeeId || req.user?.userId;
-    const empName = req.user?.name || 'Employee';
+    const empName = employeeName || req.user?.name || 'Employee';
 
     if (!empId) {
       return res.status(400).json({ success: false, message: 'Employee identification is required' });
     }
 
+    const loc = location || (req.body.latitude !== undefined && req.body.longitude !== undefined ? {
+      lat: req.body.latitude,
+      lng: req.body.longitude,
+      accuracy: req.body.accuracy,
+      address: req.body.address
+    } : undefined);
+
     const settings = db.getAttendanceSecurityConfig();
 
     // Validate against Super Admin Security Policy for Clock-Out
-    const securityCheck = validateAttendanceSecurity(selfie, location, 'OUT');
+    const securityCheck = validateAttendanceSecurity(selfie, loc, 'OUT');
     if (!securityCheck.valid) {
       return res.status(403).json({ success: false, message: securityCheck.message });
     }
 
     const today = new Date().toISOString().split('T')[0];
     const checkOutTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const finalLocation = securityCheck.verifiedLocation || location || undefined;
+    const finalLocation = securityCheck.verifiedLocation || loc || undefined;
 
     let existing = db.attendance.findOne(a =>
       (a.employeeId === empId ||

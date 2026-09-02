@@ -229,6 +229,8 @@ router.post('/employee-tracking/location', authenticateToken, trackingCtrl.postL
 router.post('/employee-tracking/location/batch', authenticateToken, trackingCtrl.postBatchLocations);
 router.get('/employee-tracking/my-status', authenticateToken, trackingCtrl.getMyTrackingStatus);
 router.post('/employee-tracking/my-consent', authenticateToken, trackingCtrl.postMyConsent);
+router.get('/employee-tracking/health', authenticateToken, trackingCtrl.getTrackingHealth);
+router.get('/employee-tracking/team/health', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getTeamTrackingHealth);
 
 // HR / Admin Live Map & Telemetry
 router.get('/employee-tracking/live', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getLiveEmployees);
@@ -238,9 +240,10 @@ router.get('/employee-tracking/employee/:id/route', authenticateToken, requirePe
 router.get('/employee-tracking/employee/:id/timeline', authenticateToken, requirePermission('employee_tracking.view_history'), trackingCtrl.getEmployeeTimeline);
 router.get('/employee-tracking/employee/:id/daily-summary', authenticateToken, requirePermission('employee_tracking.view_history'), trackingCtrl.getEmployeeDailySummary);
 
-// Geofence Management
+// Geofence Management & Dynamic Task Geofences
 router.get('/employee-tracking/geofences', authenticateToken, requirePermission('employee_tracking.view_live'), trackingCtrl.getGeofences);
 router.post('/employee-tracking/geofences', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.createGeofence);
+router.post('/employee-tracking/geofences/task', authenticateToken, trackingCtrl.createTaskGeofenceEndpoint);
 router.put('/employee-tracking/geofences/:id', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.updateGeofence);
 router.delete('/employee-tracking/geofences/:id', authenticateToken, requirePermission('employee_tracking.manage_geofence'), trackingCtrl.deleteGeofence);
 

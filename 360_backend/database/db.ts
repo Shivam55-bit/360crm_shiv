@@ -10,7 +10,9 @@ import {
   LeaveDoc, TaskDoc, MessageDoc, ActivityTimelineDoc, NotificationDoc, AttendanceSettingsDoc,
   ActivitySessionDoc, DeviceDoc,
   LatestLocationDoc, LocationHistoryDoc, GeofenceDoc, GeofenceEventDoc, TrackingPolicyDoc,
-  DailyTrackingSummaryDoc, TrackingAlertDoc
+  DailyTrackingSummaryDoc, TrackingAlertDoc,
+  FieldVisitProofDoc, DocumentAttachmentDoc, VoiceNoteDoc, SafetyEventDoc,
+  ManagerFeedbackDoc, TravelExpenseDraftDoc, ShiftHandoverDoc
 } from './types';
 
 const DATA_DIR = path.resolve(__dirname, '../data');
@@ -200,6 +202,13 @@ export class Database {
   public trackingPolicies!: Collection<TrackingPolicyDoc>;
   public dailyTrackingSummaries!: Collection<DailyTrackingSummaryDoc>;
   public trackingAlerts!: Collection<TrackingAlertDoc>;
+  public fieldVisitProofs!: Collection<FieldVisitProofDoc>;
+  public documentAttachments!: Collection<DocumentAttachmentDoc>;
+  public voiceNotes!: Collection<VoiceNoteDoc>;
+  public safetyEvents!: Collection<SafetyEventDoc>;
+  public managerFeedbacks!: Collection<ManagerFeedbackDoc>;
+  public travelExpenseDrafts!: Collection<TravelExpenseDraftDoc>;
+  public shiftHandovers!: Collection<ShiftHandoverDoc>;
 
   private constructor() {}
 
@@ -257,6 +266,13 @@ export class Database {
     this.trackingPolicies = new Collection<TrackingPolicyDoc>('trackingPolicies', (seed as any).trackingPolicies || []);
     this.dailyTrackingSummaries = new Collection<DailyTrackingSummaryDoc>('dailyTrackingSummaries', (seed as any).dailyTrackingSummaries || []);
     this.trackingAlerts = new Collection<TrackingAlertDoc>('trackingAlerts', (seed as any).trackingAlerts || []);
+    this.fieldVisitProofs = new Collection<FieldVisitProofDoc>('fieldVisitProofs', []);
+    this.documentAttachments = new Collection<DocumentAttachmentDoc>('documentAttachments', []);
+    this.voiceNotes = new Collection<VoiceNoteDoc>('voiceNotes', []);
+    this.safetyEvents = new Collection<SafetyEventDoc>('safetyEvents', []);
+    this.managerFeedbacks = new Collection<ManagerFeedbackDoc>('managerFeedbacks', []);
+    this.travelExpenseDrafts = new Collection<TravelExpenseDraftDoc>('travelExpenseDrafts', []);
+    this.shiftHandovers = new Collection<ShiftHandoverDoc>('shiftHandovers', []);
 
     this.initialized = true;
     console.log('✅ 360CRM Enterprise Database & Memory Engine Initialized with Shiv Shakti Seed Data');

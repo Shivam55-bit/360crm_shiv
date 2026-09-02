@@ -26,8 +26,8 @@
     "status": "ACTIVE",
     "avatar": "RS",
     "createdAt": "2026-01-05T00:00:00.000Z",
-    "updatedAt": "2026-09-01T09:47:12.534Z",
-    "lastLogin": "2026-09-01T09:47:12.533Z"
+    "updatedAt": "2026-09-02T05:22:35.487Z",
+    "lastLogin": "2026-09-02T05:22:35.487Z"
   },
   {
     "_id": "usr_admin_hr",
@@ -97,7 +97,7 @@
     "status": "ACTIVE",
     "avatar": "AS",
     "createdAt": "2026-01-20T00:00:00.000Z",
-    "updatedAt": "2026-09-01T09:47:12.338Z",
-    "lastLogin": "2026-09-01T09:47:12.338Z"
+    "updatedAt": "2026-09-02T05:22:35.402Z",
+    "lastLogin": "2026-09-02T05:22:35.402Z"
   }
 ]

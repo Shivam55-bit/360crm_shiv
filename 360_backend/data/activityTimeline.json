@@ -348,5 +348,125 @@
     "performedBy": "TradeIndia Lead Sync Connector Gateway",
     "timestamp": "2026-09-01T09:39:51.394Z",
     "_id": "act_1788255591415_eertc"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788256620284_e9oxp",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Dtf Sticker Printing Services Buyer - Dtf Sticker Printing Services)",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-01T09:57:00.280Z",
+    "_id": "act_1788256620286_uw2u2"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957308_8b91v",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Aizul Hossain is looking for suppliers of 'Panel Sticker' Buyer - Aizul Hossain is looking for suppliers of 'Panel Sticker')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.307Z",
+    "_id": "act_1788324957312_9bjl8"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957314_6u5ux",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Manish Vijay Patil is looking for suppliers of 'POS Machines' Buyer - Manish Vijay Patil is looking for suppliers of 'POS Machines')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.313Z",
+    "_id": "act_1788324957314_gdz1z"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957315_k4h3y",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (KALPESH is looking for suppliers of 'non tearable paper' Buyer - KALPESH is looking for suppliers of 'non tearable paper')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.315Z",
+    "_id": "act_1788324957315_ha1vz"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957316_29r4v",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Number Masking 21374550 is looking for suppliers of 'pos machine' Buyer - Number Masking 21374550 is looking for suppliers of 'pos machine')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.316Z",
+    "_id": "act_1788324957316_6sz0r"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957317_xxfgk",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Mr.Sahoo is looking for suppliers of 'rangoli stickers' Buyer - Mr.Sahoo is looking for suppliers of 'rangoli stickers')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.317Z",
+    "_id": "act_1788324957317_3t7wq"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957318_hr7yv",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Shopping_Inquiry_30966964 is looking for suppliers of 'thermal printer' Buyer - Shopping_Inquiry_30966964 is looking for suppliers of 'thermal printer')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.317Z",
+    "_id": "act_1788324957319_qbrdx"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957319_8a4qz",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Hari Tap Vihswas Karma is looking for suppliers of 'thermal receipt printers' Buyer - Hari Tap Vihswas Karma is looking for suppliers of 'thermal receipt printers')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.319Z",
+    "_id": "act_1788324957320_fa01q"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957320_mvpun",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Cartoon Mud Buyer - Cartoon Mud)",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.320Z",
+    "_id": "act_1788324957321_y7q5h"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957321_e3prd",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Rohan is looking for suppliers of 'soft pvc label' Buyer - Rohan is looking for suppliers of 'soft pvc label')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.321Z",
+    "_id": "act_1788324957321_v3s1g"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788324957322_uf0ca",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Tabrez Pasha is looking for suppliers of 'Bopp Wrap Around Labels' Buyer - Tabrez Pasha is looking for suppliers of 'Bopp Wrap Around Labels')",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T04:55:57.322Z",
+    "_id": "act_1788324957322_80eu1"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1788326391098_20wy5",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Ultra Destructible Vinyl Label Buyer - Ultra Destructible Vinyl Label)",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-02T05:19:51.097Z",
+    "_id": "act_1788326391099_qr2uf"
   }
 ]

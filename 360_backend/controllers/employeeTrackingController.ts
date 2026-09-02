@@ -11,6 +11,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 import { TrackingEngineService } from '../tracking/trackingEngine.service';
 import { TrackingPolicyService } from '../tracking/policy.service';
+import { GeofenceService } from '../tracking/geofence.service';
 import { EmployeeDoc } from '../database/types';
 
 /**
@@ -97,7 +98,7 @@ export async function postLocation(req: AuthenticatedRequest, res: Response) {
 
 /**
  * POST /api/employee-tracking/location/batch
- * Ingests queued offline location packets when internet reconnects
+ * Ingests queued offline location packets with per-point validation and duplicate filtering
  */
 export async function postBatchLocations(req: AuthenticatedRequest, res: Response) {
   try {
@@ -106,28 +107,212 @@ export async function postBatchLocations(req: AuthenticatedRequest, res: Respons
       return res.status(403).json({ success: false, message: 'Employee profile not found.' });
     }
 
-    const { packets = [] } = req.body;
-    if (!Array.isArray(packets) || packets.length === 0) {
-      return res.status(400).json({ success: false, message: 'Packets array is required.' });
+    const items = req.body.packets || req.body.locations || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Packets or locations array is required.' });
     }
 
-    // Limit batch size to prevent payload bombing
-    const safePackets = packets.slice(0, 100);
+    // Limit batch size to max 100 to prevent payload bombing
+    const safePackets = items.slice(0, 100);
+    let accepted = 0;
+    let duplicate = 0;
+    let rejected = 0;
 
-    const result = await TrackingEngineService.ingestBatchPackets(
-      employee,
-      safePackets,
-      {
-        ip: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1',
-        userAgent: req.headers['user-agent']
+    const seenTimestamps = new Set<string>();
+
+    for (const p of safePackets) {
+      const lat = typeof p.latitude === 'number' ? p.latitude : parseFloat(String(p.latitude));
+      const lng = typeof p.longitude === 'number' ? p.longitude : parseFloat(String(p.longitude));
+
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        rejected++;
+        continue;
       }
-    );
+
+      const timeKey = `${p.recordedAt || p.timestamp}_${lat.toFixed(5)}_${lng.toFixed(5)}`;
+      if (seenTimestamps.has(timeKey)) {
+        duplicate++;
+        continue;
+      }
+      seenTimestamps.add(timeKey);
+
+      try {
+        const result = await TrackingEngineService.ingestLocationPacket(
+          employee,
+          {
+            latitude: lat,
+            longitude: lng,
+            accuracy: p.accuracy !== undefined ? Number(p.accuracy) : 15,
+            speed: p.speed !== undefined ? Number(p.speed) : undefined,
+            heading: p.heading !== undefined ? Number(p.heading) : undefined,
+            altitude: p.altitude !== undefined ? Number(p.altitude) : undefined,
+            batteryLevel: p.batteryLevel !== undefined ? Number(p.batteryLevel) : (p.battery !== undefined ? Number(p.battery) : undefined),
+            isCharging: Boolean(p.isCharging),
+            recordedAt: p.recordedAt || p.timestamp || new Date().toISOString(),
+            deviceId: p.deviceId,
+            platform: p.platform,
+            source: 'OFFLINE_SYNC',
+            isMockLocation: Boolean(p.isMockLocation)
+          },
+          {
+            ip: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1',
+            userAgent: req.headers['user-agent']
+          }
+        );
+
+        if (result.success) {
+          accepted++;
+        } else {
+          rejected++;
+        }
+      } catch {
+        rejected++;
+      }
+    }
 
     return res.json({
       success: true,
-      message: `Processed ${result.ingestedCount} location packets from offline queue.`,
-      ...result
+      message: `Batch processed: ${accepted} accepted, ${duplicate} duplicate, ${rejected} rejected.`,
+      data: {
+        received: items.length,
+        accepted,
+        duplicate,
+        rejected
+      }
     });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+/**
+ * GET /api/employee-tracking/health
+ * Calculates employee tracking health metrics
+ */
+export async function getTrackingHealth(req: AuthenticatedRequest, res: Response) {
+  try {
+    const employee = resolveCurrentEmployee(req);
+    if (!employee) {
+      return res.status(403).json({ success: false, message: 'Employee profile not found.' });
+    }
+
+    const latest = db.latestLocations.findById(`loc_latest_${employee._id}`);
+    const now = Date.now();
+    let healthState: 'HEALTHY' | 'GPS_DISABLED' | 'PERMISSION_DENIED' | 'STALE' | 'OFFLINE' | 'LOW_BATTERY' | 'POOR_ACCURACY' = 'OFFLINE';
+
+    if (employee.locationConsent?.status === 'DENIED') {
+      healthState = 'PERMISSION_DENIED';
+    } else if (latest) {
+      const ageMs = now - new Date(latest.lastRecordedAt).getTime();
+      if (latest.batteryLevel !== undefined && latest.batteryLevel <= 15) {
+        healthState = 'LOW_BATTERY';
+      } else if (latest.accuracy > 100) {
+        healthState = 'POOR_ACCURACY';
+      } else if (ageMs > 15 * 60 * 1000) {
+        healthState = 'STALE';
+      } else {
+        healthState = 'HEALTHY';
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        employeeId: employee._id,
+        employeeName: employee.name,
+        healthState,
+        latestLocation: latest || null,
+        battery: latest?.batteryLevel || null,
+        accuracy: latest?.accuracy || null,
+        lastSeen: latest?.lastRecordedAt || null
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+/**
+ * GET /api/employee-tracking/team/health
+ * HR/Manager overview of team tracking health
+ */
+export async function getTeamTrackingHealth(req: AuthenticatedRequest, res: Response) {
+  try {
+    const allEmployees = db.employees.getAll();
+    const latestLocations = db.latestLocations.getAll();
+    const locMap = new Map<string, any>();
+    latestLocations.forEach(l => locMap.set(l.employeeId, l));
+
+    const now = Date.now();
+    const teamHealth = allEmployees.map(emp => {
+      const loc = locMap.get(emp._id);
+      let healthState: string = 'OFFLINE';
+
+      if (emp.locationConsent?.status === 'DENIED') {
+        healthState = 'PERMISSION_DENIED';
+      } else if (loc) {
+        const ageMs = now - new Date(loc.lastRecordedAt).getTime();
+        if (loc.batteryLevel !== undefined && loc.batteryLevel <= 15) {
+          healthState = 'LOW_BATTERY';
+        } else if (loc.accuracy > 100) {
+          healthState = 'POOR_ACCURACY';
+        } else if (ageMs > 15 * 60 * 1000) {
+          healthState = 'STALE';
+        } else {
+          healthState = 'HEALTHY';
+        }
+      }
+
+      return {
+        employeeId: emp._id,
+        employeeName: emp.name,
+        department: emp.department,
+        healthState,
+        battery: loc?.batteryLevel || null,
+        lastSeen: loc?.lastRecordedAt || null
+      };
+    });
+
+    const summary = {
+      total: teamHealth.length,
+      healthy: teamHealth.filter(t => t.healthState === 'HEALTHY').length,
+      lowBattery: teamHealth.filter(t => t.healthState === 'LOW_BATTERY').length,
+      stale: teamHealth.filter(t => t.healthState === 'STALE').length,
+      offline: teamHealth.filter(t => t.healthState === 'OFFLINE').length,
+      permissionDenied: teamHealth.filter(t => t.healthState === 'PERMISSION_DENIED').length
+    };
+
+    return res.json({ success: true, data: { summary, team: teamHealth } });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+/**
+ * POST /api/employee-tracking/geofences/task
+ * Creates dynamic task geofence (Module 5)
+ */
+export async function createTaskGeofenceEndpoint(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { taskId, customerId, employeeId, name, latitude, longitude, radiusMeters, validHours, address } = req.body;
+
+    if (!name || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ success: false, message: 'name, latitude, and longitude are required.' });
+    }
+
+    const geo = GeofenceService.createDynamicTaskGeofence({
+      taskId,
+      customerId,
+      employeeId: employeeId || (req.user as any)?.employeeId || req.user?.userId,
+      name,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      radiusMeters: radiusMeters ? Number(radiusMeters) : 150,
+      validHours: validHours ? Number(validHours) : 24,
+      address
+    });
+
+    return res.status(201).json({ success: true, message: 'Dynamic task geofence created', data: geo });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }

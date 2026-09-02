@@ -62,5 +62,72 @@
     ],
     "remarks": "Biometric selfie verified at Ahmedabad West Office",
     "createdAt": "2026-08-29T11:14:00.450Z"
+  },
+  {
+    "employeeId": "usr_employee_arjun",
+    "employeeName": "Arjun Singh",
+    "date": "2026-09-02",
+    "checkIn": "10:51:14 am",
+    "checkOut": "10:52:35 am",
+    "status": "COMPLETED",
+    "remarks": "Completed generator installation and site inspection.",
+    "selfieCheckIn": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...",
+    "locationCheckIn": {
+      "lat": 23.0225,
+      "lng": 72.5714,
+      "accuracy": 10,
+      "address": "Headquarters Office, Ahmedabad",
+      "matchedLocationName": "Ahmedabad Manufacturing Plant",
+      "officeLocationId": "loc_ahmedabad_facility",
+      "verifiedDistance": 0
+    },
+    "clockInVerification": {
+      "selfieRequired": true,
+      "selfieVerified": true,
+      "selfieUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...",
+      "locationRequired": true,
+      "locationVerified": true,
+      "latitude": 23.0225,
+      "longitude": 72.5714,
+      "accuracy": 10,
+      "officeLocationId": "loc_ahmedabad_facility",
+      "officeLocationName": "Ahmedabad Manufacturing Plant",
+      "distanceFromOffice": 0,
+      "verifiedAt": "2026-09-02T05:21:15.063Z"
+    },
+    "breaks": [
+      {
+        "_id": "brk_1788326555588",
+        "start": "10:52:35 am",
+        "reason": "Shift Break",
+        "end": "10:52:35 am",
+        "durationMinutes": 1
+      }
+    ],
+    "workHours": 0,
+    "createdAt": "2026-09-02T05:21:15.063Z",
+    "_id": "att_1788326475063_yca3l",
+    "updatedAt": "2026-09-02T05:22:35.602Z",
+    "totalBreakMinutes": 1,
+    "locationCheckOut": {
+      "lat": 23.0225,
+      "lng": 72.5714,
+      "address": "Geo-stamped check-in"
+    },
+    "clockOutVerification": {
+      "selfieRequired": false,
+      "selfieVerified": false,
+      "selfieUrl": "",
+      "locationRequired": false,
+      "locationVerified": true,
+      "latitude": 23.0225,
+      "longitude": 72.5714,
+      "verifiedAt": "2026-09-02T05:22:35.601Z"
+    },
+    "totalAttendanceMinutes": 1,
+    "totalWorkingMinutes": 0,
+    "totalActiveMinutes": 0,
+    "totalIdleMinutes": 0,
+    "activeRatio": 100
   }
 ]

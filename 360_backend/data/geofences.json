@@ -106,5 +106,51 @@
     "enabled": true,
     "createdAt": "2026-01-15T00:00:00.000Z",
     "updatedAt": "2026-01-15T00:00:00.000Z"
+  },
+  {
+    "name": "Installation Site - Apollo Hospitals",
+    "code": "GEO_TASK_task_test_1788326532384",
+    "category": "TASK",
+    "latitude": 23.05,
+    "longitude": 72.6,
+    "radiusMeters": 200,
+    "address": "Bhat, Gandhinagar",
+    "assignedEmployees": [
+      "usr_admin_main"
+    ],
+    "taskId": "task_test_1788326532384",
+    "employeeId": "usr_admin_main",
+    "validFrom": "2026-09-02T05:22:12.388Z",
+    "validUntil": "2026-09-02T17:22:12.388Z",
+    "isExpired": false,
+    "alertOnEntry": true,
+    "alertOnExit": true,
+    "enabled": true,
+    "createdAt": "2026-09-02T05:22:12.388Z",
+    "updatedAt": "2026-09-02T05:22:12.388Z",
+    "_id": "geo_1788326532388_x108w"
+  },
+  {
+    "name": "Installation Site - Apollo Hospitals",
+    "code": "GEO_TASK_tas_1788326555531_4rrxd",
+    "category": "TASK",
+    "latitude": 23.05,
+    "longitude": 72.6,
+    "radiusMeters": 200,
+    "address": "Bhat, Gandhinagar",
+    "assignedEmployees": [
+      "usr_admin_main"
+    ],
+    "taskId": "tas_1788326555531_4rrxd",
+    "employeeId": "usr_admin_main",
+    "validFrom": "2026-09-02T05:22:35.536Z",
+    "validUntil": "2026-09-02T17:22:35.536Z",
+    "isExpired": true,
+    "alertOnEntry": true,
+    "alertOnExit": true,
+    "enabled": false,
+    "createdAt": "2026-09-02T05:22:35.536Z",
+    "updatedAt": "2026-09-02T05:22:35.560Z",
+    "_id": "geo_1788326555536_mm29x"
   }
 ]
