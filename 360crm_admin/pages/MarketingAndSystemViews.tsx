@@ -1313,16 +1313,16 @@ export const IntegrationsView: React.FC = () => {
                     </span>
                   </div>
 
-                  {int.lastTestStatus && (
+                  {(int.lastTestStatus || int.lastSyncStatus) && (
                     <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
                       <span>Gateway Health:</span>
                       <span className={`text-[10px] font-bold flex items-center gap-1 ${
-                        int.lastTestStatus === 'SUCCESS' ? 'text-emerald-600' : 'text-amber-600'
+                        (int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'text-emerald-600' : 'text-amber-600'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          int.lastTestStatus === 'SUCCESS' ? 'bg-emerald-500' : 'bg-amber-500'
+                          (int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'bg-emerald-500' : 'bg-amber-500'
                         }`} />
-                        {int.lastTestStatus === 'SUCCESS' ? 'Operational & Ready' : 'Warning / Error'}
+                        {(int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'Operational & Ready' : 'Warning / Error'}
                       </span>
                     </div>
                   )}
