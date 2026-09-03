@@ -90,7 +90,7 @@ export const SuperAdminPortal: React.FC = () => {
     password: '',
     phone: '',
     role: 'ADMIN',
-    organization: 'SHIV SHAKTI ENTERPRISES',
+    organization: '',
     customPermissions: [] as string[],
   });
 
@@ -656,7 +656,7 @@ export const SuperAdminPortal: React.FC = () => {
                         password: '',
                         phone: '',
                         role: 'ADMIN',
-                        organization: 'SHIV SHAKTI ENTERPRISES',
+                        organization: '',
                         customPermissions: []
                       });
                       setIsUserModalOpen(true);
@@ -757,7 +757,7 @@ export const SuperAdminPortal: React.FC = () => {
                       password: '',
                       phone: '',
                       role: 'ADMIN',
-                      organization: 'SHIV SHAKTI ENTERPRISES',
+                      organization: '',
                       customPermissions: []
                     });
                     setIsUserModalOpen(true);
@@ -1865,12 +1865,13 @@ export const SuperAdminPortal: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Organization Unit</label>
+            <label className="block font-semibold text-slate-700 mb-1">Company / Organization Name *</label>
             <input
               type="text"
               value={userForm.organization}
               onChange={e => setUserForm({ ...userForm, organization: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white"
+              placeholder="e.g. Acme Industries Ltd."
             />
           </div>
 

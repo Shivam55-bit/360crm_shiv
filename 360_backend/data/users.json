@@ -11,8 +11,8 @@
     "status": "ACTIVE",
     "avatar": "PA",
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-09-01T09:47:12.635Z",
-    "lastLogin": "2026-09-01T09:47:12.635Z"
+    "updatedAt": "2026-09-02T07:22:53.109Z",
+    "lastLogin": "2026-09-02T07:22:53.109Z"
   },
   {
     "_id": "usr_admin_main",
@@ -99,5 +99,24 @@
     "createdAt": "2026-01-20T00:00:00.000Z",
     "updatedAt": "2026-09-02T05:22:35.402Z",
     "lastLogin": "2026-09-02T05:22:35.402Z"
+  },
+  {
+    "name": "Acme Admin",
+    "email": "admin_1788333652202@acme.com",
+    "passwordHash": "$2a$10$hP5GaLGWkqKBXTFARzWlI.cAu7IW4mPkl47UesWR2O2wgsVyYZaAK",
+    "phone": "",
+    "role": "ADMIN",
+    "roleId": "role_admin",
+    "organization": "ACME Corporation Ltd",
+    "status": "ACTIVE",
+    "avatar": "AA",
+    "customPermissions": [],
+    "permissionMode": "ROLE",
+    "showLoginCredentials": true,
+    "showOnLogin": true,
+    "createdAt": "2026-09-02T07:20:52.310Z",
+    "_id": "use_1788333652310_30dlh",
+    "adminId": "use_1788333652310_30dlh",
+    "updatedAt": "2026-09-02T07:20:52.311Z"
   }
 ]

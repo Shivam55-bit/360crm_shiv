@@ -54,6 +54,18 @@ export async function login(req: Request, res: Response) {
     const customPerms = user.customPermissions || [];
     const permissions = Array.from(new Set([...rolePerms, ...customPerms]));
 
+    // Compute effective adminId
+    let effectiveAdminId = user.adminId;
+    if (!effectiveAdminId) {
+      if (user.role === 'ADMIN') {
+        effectiveAdminId = user._id;
+      } else if (user.role === 'SUPER_ADMIN') {
+        effectiveAdminId = 'usr_superadmin';
+      } else {
+        effectiveAdminId = 'usr_admin_main';
+      }
+    }
+
     const authenticatedUser = {
       userId: user._id,
       email: user.email,
@@ -62,6 +74,7 @@ export async function login(req: Request, res: Response) {
       roleId: user.roleId,
       permissions,
       organization: user.organization,
+      adminId: effectiveAdminId,
       avatar: user.avatar
     };
 
@@ -88,7 +101,7 @@ export function getDemoUsers(req: Request, res: Response) {
   try {
     const users = db.users.getAll()
       .filter(user => user.status === 'ACTIVE' && user.showOnLogin !== false)
-      .map(({ _id, name, email, role, avatar }) => ({ _id, name, email, role, avatar }));
+      .map(({ _id, name, email, role, avatar, organization }) => ({ _id, name, email, role, avatar, organization }));
 
     return res.json({ success: true, data: users });
   } catch (err: any) {
@@ -112,6 +125,17 @@ export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
     const customPerms = user.customPermissions || [];
     const permissions = Array.from(new Set([...rolePerms, ...customPerms]));
 
+    let effectiveAdminId = user.adminId;
+    if (!effectiveAdminId) {
+      if (user.role === 'ADMIN') {
+        effectiveAdminId = user._id;
+      } else if (user.role === 'SUPER_ADMIN') {
+        effectiveAdminId = 'usr_superadmin';
+      } else {
+        effectiveAdminId = 'usr_admin_main';
+      }
+    }
+
     return res.json({
       success: true,
       data: {
@@ -124,6 +148,7 @@ export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
         roleId: user.roleId,
         permissions,
         organization: user.organization,
+        adminId: effectiveAdminId,
         avatar: user.avatar,
         status: user.status,
         lastLogin: user.lastLogin
@@ -158,6 +183,17 @@ export async function switchDemoUser(req: Request, res: Response) {
     const customPerms = user.customPermissions || [];
     const permissions = Array.from(new Set([...rolePerms, ...customPerms]));
 
+    let effectiveAdminId = user.adminId;
+    if (!effectiveAdminId) {
+      if (user.role === 'ADMIN') {
+        effectiveAdminId = user._id;
+      } else if (user.role === 'SUPER_ADMIN') {
+        effectiveAdminId = 'usr_superadmin';
+      } else {
+        effectiveAdminId = 'usr_admin_main';
+      }
+    }
+
     const authenticatedUser = {
       userId: user._id,
       email: user.email,
@@ -166,6 +202,7 @@ export async function switchDemoUser(req: Request, res: Response) {
       roleId: user.roleId,
       permissions,
       organization: user.organization,
+      adminId: effectiveAdminId,
       avatar: user.avatar
     };
 

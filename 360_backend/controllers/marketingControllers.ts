@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 // ==================== CAMPAIGNS ====================
 export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, type } = req.query;
-    let campaigns = db.campaigns.getAll();
+    let campaigns = db.campaigns.getAll().filter(c => matchesTenant(c, req));
 
     if (status) campaigns = campaigns.filter(c => c.status === status);
     if (type) campaigns = campaigns.filter(c => c.type === type);
@@ -28,7 +28,9 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Campaign name, channel type, and budget are required.' });
     }
 
+    const adminId = getTenantAdminId(req);
     const newCampaign = db.campaigns.insertOne({
+      adminId,
       name,
       type,
       budget: Number(budget),
@@ -61,7 +63,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
 // ==================== LEAD SOURCES ====================
 export async function getLeadSources(req: AuthenticatedRequest, res: Response) {
   try {
-    const sources = db.leadSources.getAll();
+    const sources = db.leadSources.getAll().filter(s => matchesTenant(s, req));
     return res.json({ success: true, data: sources });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -198,7 +200,9 @@ export async function sendWhatsAppMessage(req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ success: false, message: 'Recipient phone number is required.' });
     }
 
+    const adminId = getTenantAdminId(req);
     const msg = db.messages.insertOne({
+      adminId,
       recipientPhone: phone,
       recipientName: customerName,
       channel: 'WHATSAPP',

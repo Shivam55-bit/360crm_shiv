@@ -24,23 +24,23 @@
       "syncRespondedLeads": true,
       "defaultPriority": "MEDIUM"
     },
-    "lastSyncedAt": "2026-09-02T05:19:51.448Z",
-    "lastSuccessfulSyncAt": "2026-09-02T05:19:51.448Z",
+    "lastSyncedAt": "2026-09-02T05:37:02.308Z",
+    "lastSuccessfulSyncAt": "2026-09-02T05:37:02.308Z",
     "lastSyncStatus": "SUCCESS",
     "lastTestStatus": "FAILED",
     "lastTestResponse": "Sync error: fetch failed",
-    "totalSyncedEvents": 1165,
-    "totalFetched": 1165,
+    "totalSyncedEvents": 1198,
+    "totalFetched": 1198,
     "totalCreated": 165,
-    "totalUpdated": 1000,
+    "totalUpdated": 1033,
     "totalFailed": 0,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-09-02T05:19:51.449Z",
-    "nextSyncAt": "2026-09-02T05:24:51.448Z",
+    "updatedAt": "2026-09-02T05:37:02.308Z",
+    "nextSyncAt": "2026-09-02T05:42:02.308Z",
     "lastSyncResult": {
       "fetched": 11,
-      "created": 1,
-      "updated": 10,
+      "created": 0,
+      "updated": 11,
       "skipped": 0,
       "failed": 0
     }
@@ -67,7 +67,7 @@
       "defaultPriority": "MEDIUM",
       "initialSyncDaysBack": 7
     },
-    "lastSyncedAt": "2026-09-02T05:19:49.821Z",
+    "lastSyncedAt": "2026-09-02T05:37:00.398Z",
     "lastSuccessfulSyncAt": "2026-02-16T17:45:00.000Z",
     "lastSyncStatus": "FAILED",
     "lastTestStatus": "FAILED",
@@ -78,7 +78,7 @@
     "totalUpdated": 6,
     "totalFailed": 0,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-09-02T05:19:49.821Z",
+    "updatedAt": "2026-09-02T05:37:00.398Z",
     "lastSyncError": "CRM key that you are using is incorrect. Kindly use the correct CRM key visible on the IM Leads API screen."
   },
   {

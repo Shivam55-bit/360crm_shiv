@@ -15,6 +15,7 @@ export interface UserDoc {
   showLoginCredentials?: boolean; // Controls whether the login email is shown in admin directory views
   showOnLogin?: boolean; // Controls whether this account appears in the login quick-access list
   organization?: string;
+  adminId?: string; // Tenant root admin ID
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   lastLogin?: string;
   avatar?: string;
@@ -45,6 +46,7 @@ export interface PermissionDoc {
 
 export interface LeadDoc {
   _id: string;
+  adminId?: string;
   leadCode?: string;
   name: string;
   companyName?: string;
@@ -79,6 +81,7 @@ export interface LeadDoc {
 
 export interface CustomerDoc {
   _id: string;
+  adminId?: string;
   customerCode?: string;
   name: string;
   companyName: string;
@@ -119,6 +122,7 @@ export interface CustomerDoc {
 
 export interface FollowUpDoc {
   _id: string;
+  adminId?: string;
   leadId?: string;
   customerId?: string;
   leadName?: string;
@@ -138,6 +142,7 @@ export interface FollowUpDoc {
 
 export interface CampaignDoc {
   _id: string;
+  adminId?: string;
   name: string;
   source?: string;
   type?: string;
@@ -159,6 +164,7 @@ export interface CampaignDoc {
 
 export interface LeadSourceDoc {
   _id: string;
+  adminId?: string;
   name: string;
   type: string;
   status: 'ACTIVE' | 'INACTIVE';
@@ -170,6 +176,7 @@ export interface LeadSourceDoc {
 
 export interface ProductDoc {
   _id: string;
+  adminId?: string;
   name: string;
   sku: string;
   barcode?: string;
@@ -194,6 +201,7 @@ export interface ProductDoc {
 
 export interface CategoryDoc {
   _id: string;
+  adminId?: string;
   name: string;
   code?: string;
   parentId?: string;
@@ -204,6 +212,7 @@ export interface CategoryDoc {
 
 export interface WarehouseDoc {
   _id: string;
+  adminId?: string;
   name: string;
   code: string;
   address: string;
@@ -221,6 +230,7 @@ export interface WarehouseDoc {
 
 export interface StockTransactionDoc {
   _id: string;
+  adminId?: string;
   productId: string;
   productName: string;
   sku?: string;
@@ -246,6 +256,7 @@ export interface StockTransactionDoc {
 
 export interface SupplierDoc {
   _id: string;
+  adminId?: string;
   name: string;
   companyName?: string;
   contactPerson?: string;
@@ -279,6 +290,7 @@ export interface PurchaseItem {
 
 export interface PurchaseDoc {
   _id: string;
+  adminId?: string;
   purchaseNumber: string;
   supplierId: string;
   supplierName: string;
@@ -318,6 +330,7 @@ export interface QuotationItem {
 
 export interface QuotationDoc {
   _id: string;
+  adminId?: string;
   quotationNumber: string;
   version?: number;
   customerId: string;
@@ -343,6 +356,7 @@ export interface QuotationDoc {
 
 export interface SalesOrderDoc {
   _id: string;
+  adminId?: string;
   salesOrderNumber: string;
   customerId: string;
   customerName: string;
@@ -385,6 +399,7 @@ export interface InvoiceItem {
 
 export interface InvoiceDoc {
   _id: string;
+  adminId?: string;
   invoiceNumber: string;
   customerId: string;
   customerName: string;
@@ -411,6 +426,7 @@ export interface InvoiceDoc {
 
 export interface PaymentDoc {
   _id: string;
+  adminId?: string;
   paymentNumber: string;
   partyId?: string;
   partyName?: string;
@@ -433,6 +449,7 @@ export interface PaymentDoc {
 
 export interface ExpenseDoc {
   _id: string;
+  adminId?: string;
   expenseNumber?: string;
   category: 'Rent' | 'Utilities' | 'Salaries' | 'Marketing' | 'Supplies' | 'Travel' | 'Maintenance' | 'Other' | string;
   title: string;
@@ -453,6 +470,7 @@ export interface ExpenseDoc {
 
 export interface CreditNoteDoc {
   _id: string;
+  adminId?: string;
   creditNoteNumber: string;
   customerId: string;
   customerName: string;
@@ -468,6 +486,7 @@ export interface CreditNoteDoc {
 
 export interface EmployeeDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   name: string;
   email: string;
@@ -502,6 +521,7 @@ export interface EmployeeDoc {
 
 export interface CallLogDoc {
   _id: string;
+  adminId?: string;
   leadId: string;
   leadName?: string;
   leadPhone?: string;
@@ -544,6 +564,7 @@ export interface VerificationStamp {
 
 export interface AttendanceDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   department?: string;
@@ -597,6 +618,7 @@ export interface OfficeLocation {
 
 export interface AttendanceSettingsDoc {
   _id: string; // 'attendance_security_config'
+  adminId?: string;
   requireSelfie: boolean;
   requireLocation: boolean;
   requireSelfieClockIn: boolean;
@@ -634,6 +656,7 @@ export type ActivityEventType =
 
 export interface ActivitySessionDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   attendanceId: string;
@@ -657,6 +680,7 @@ export interface ActivitySessionDoc {
 
 export interface DeviceDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   deviceId: string;
@@ -673,6 +697,7 @@ export interface DeviceDoc {
 
 export interface SalaryDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   month: string; // e.g. "2026-08"
@@ -688,6 +713,7 @@ export interface SalaryDoc {
 
 export interface LeaveDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   leaveType: 'CASUAL' | 'SICK' | 'PAID' | 'EMERGENCY' | 'UNPAID';
@@ -707,6 +733,7 @@ export interface LeaveDoc {
 
 export interface TaskDoc {
   _id: string;
+  adminId?: string;
   title: string;
   description: string;
   assignedTo: string; // User / Employee ID or Name
@@ -728,6 +755,7 @@ export interface TaskDoc {
 
 export interface MessageDoc {
   _id: string;
+  adminId?: string;
   leadId?: string;
   customerId?: string;
   recipientName?: string;
@@ -751,6 +779,7 @@ export interface MessageDoc {
 
 export interface ActivityTimelineDoc {
   _id: string;
+  adminId?: string;
   leadId?: string;
   entityType?: string;
   entityId?: string;
@@ -766,6 +795,7 @@ export interface ActivityTimelineDoc {
 
 export interface NotificationDoc {
   _id: string;
+  adminId?: string;
   userId?: string;
   recipientId?: string;
   title: string;
@@ -778,6 +808,7 @@ export interface NotificationDoc {
 
 export interface PerformanceDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   reviewPeriod: string; // e.g. "Q2 2026"
@@ -791,6 +822,7 @@ export interface PerformanceDoc {
 
 export interface AuditLogDoc {
   _id: string;
+  adminId?: string;
   userId: string;
   userName: string;
   userEmail?: string;
@@ -812,6 +844,7 @@ export interface AuditLogDoc {
 
 export interface IntegrationDoc {
   _id: string;
+  adminId?: string;
   name: string;
   code: string; // 'tradeindia' | 'indiamart' | 'whatsapp' | 'website_webhook' | 'custom_rest_api' | 'razorpay' | 'stripe' | string
   provider?: string; // 'TradeIndia' | 'IndiaMART' | 'Website' | 'WhatsApp' | 'Razorpay' | 'Stripe' | 'Custom REST' | string
@@ -858,6 +891,7 @@ export interface IntegrationDoc {
 
 export interface IntegrationLogDoc {
   _id: string;
+  adminId?: string;
   integrationId: string;
   integrationName: string;
   provider: string;
@@ -908,6 +942,7 @@ export type WorkLocationType =
 
 export interface LatestLocationDoc {
   _id: string; // e.g. `loc_latest_${employeeId}`
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   employeeCode: string;
@@ -948,6 +983,7 @@ export interface LatestLocationDoc {
 
 export interface LocationHistoryDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   latitude: number;
@@ -981,6 +1017,7 @@ export interface LocationHistoryDoc {
 
 export interface GeofenceDoc {
   _id: string;
+  adminId?: string;
   name: string;
   code: string;
   category: 'OFFICE' | 'WAREHOUSE' | 'BRANCH' | 'PLANT' | 'CLIENT_SITE' | 'CUSTOMER' | 'PROJECT_SITE' | 'PROJECT' | 'TASK' | 'TEMPORARY';
@@ -1009,6 +1046,7 @@ export interface GeofenceDoc {
 
 export interface GeofenceEventDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   geofenceId: string;
@@ -1025,6 +1063,7 @@ export interface GeofenceEventDoc {
 
 export interface TrackingPolicyDoc {
   _id: string; // 'tracking_policy_config'
+  adminId?: string;
   enabled: boolean;
   trackingEnabled?: boolean;
   trackingMode: TrackingModeType;
@@ -1060,6 +1099,7 @@ export interface TrackingPolicyDoc {
 
 export interface DailyTrackingSummaryDoc {
   _id: string; // `sum_${employeeId}_${date}`
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   department?: string;
@@ -1087,6 +1127,7 @@ export interface DailyTrackingSummaryDoc {
 
 export interface TrackingAlertDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   type: 'OUTSIDE_GEOFENCE' | 'LOW_BATTERY' | 'TRACKING_OFFLINE' | 'ANOMALY_SPEED' | 'LOCATION_SPOOF_RISK';
@@ -1099,6 +1140,7 @@ export interface TrackingAlertDoc {
 
 export interface FieldVisitProofDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName?: string;
   taskId?: string;
@@ -1122,6 +1164,7 @@ export interface FieldVisitProofDoc {
 
 export interface DocumentAttachmentDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName?: string;
   entityType: 'LEAD' | 'CUSTOMER' | 'TASK' | 'FOLLOWUP' | 'QUOTATION' | 'EXPENSE' | 'GENERAL';
@@ -1138,6 +1181,7 @@ export interface DocumentAttachmentDoc {
 
 export interface VoiceNoteDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName?: string;
   leadId?: string;
@@ -1153,6 +1197,7 @@ export interface VoiceNoteDoc {
 
 export interface SafetyEventDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   type: 'SOS' | 'CHECK_IN' | 'SAFE_ALERT';
@@ -1170,6 +1215,7 @@ export interface SafetyEventDoc {
 
 export interface ManagerFeedbackDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName?: string;
   managerId: string;
@@ -1184,6 +1230,7 @@ export interface ManagerFeedbackDoc {
 
 export interface TravelExpenseDraftDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   date: string; // YYYY-MM-DD
@@ -1205,6 +1252,7 @@ export interface TravelExpenseDraftDoc {
 
 export interface ShiftHandoverDoc {
   _id: string;
+  adminId?: string;
   employeeId: string;
   employeeName: string;
   date: string; // YYYY-MM-DD

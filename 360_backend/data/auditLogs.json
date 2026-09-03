@@ -745,5 +745,62 @@
     "timestamp": "2026-09-02T05:22:35.647Z",
     "createdAt": "2026-09-02T05:22:35.647Z",
     "_id": "aud_1788326555647_ahx0a"
+  },
+  {
+    "userId": "usr_superadmin",
+    "userName": "Priyanshu Agrawal",
+    "userRole": "SUPER_ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Priyanshu Agrawal (SUPER_ADMIN) logged in successfully",
+    "ipAddress": "::1",
+    "userAgent": "node",
+    "timestamp": "2026-09-02T07:20:52.185Z",
+    "createdAt": "2026-09-02T07:20:52.185Z",
+    "_id": "aud_1788333652185_7prlm"
+  },
+  {
+    "userId": "usr_superadmin",
+    "userName": "Priyanshu Agrawal",
+    "userRole": "SUPER_ADMIN",
+    "action": "CREATE",
+    "module": "Users",
+    "description": "Created user account Acme Admin (ADMIN)",
+    "recordId": "use_1788333652310_30dlh",
+    "newData": {
+      "name": "Acme Admin",
+      "email": "admin_1788333652202@acme.com",
+      "phone": "",
+      "role": "ADMIN",
+      "roleId": "role_admin",
+      "organization": "ACME Corporation Ltd",
+      "status": "ACTIVE",
+      "avatar": "AA",
+      "customPermissions": [],
+      "permissionMode": "ROLE",
+      "showLoginCredentials": true,
+      "showOnLogin": true,
+      "createdAt": "2026-09-02T07:20:52.310Z",
+      "_id": "use_1788333652310_30dlh",
+      "adminId": "use_1788333652310_30dlh"
+    },
+    "ipAddress": "::1",
+    "userAgent": "node",
+    "timestamp": "2026-09-02T07:20:52.311Z",
+    "createdAt": "2026-09-02T07:20:52.311Z",
+    "_id": "aud_1788333652311_jwj5w"
+  },
+  {
+    "userId": "usr_superadmin",
+    "userName": "Priyanshu Agrawal",
+    "userRole": "SUPER_ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Priyanshu Agrawal (SUPER_ADMIN) logged in successfully",
+    "ipAddress": "::1",
+    "userAgent": "node",
+    "timestamp": "2026-09-02T07:22:53.114Z",
+    "createdAt": "2026-09-02T07:22:53.114Z",
+    "_id": "aud_1788333773114_1dwwe"
   }
 ]

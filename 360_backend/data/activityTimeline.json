@@ -468,5 +468,15 @@
     "performedBy": "TradeIndia Lead Sync Connector Gateway",
     "timestamp": "2026-09-02T05:19:51.097Z",
     "_id": "act_1788326391099_qr2uf"
+  },
+  {
+    "adminId": "use_1788333773220_wsd2s",
+    "entityType": "LEAD",
+    "entityId": "lea_1788333773347_m6llw",
+    "action": "CREATE",
+    "description": "Lead 'Acme First Client' (LD-2026-0047) registered in system",
+    "performedBy": "Acme Admin",
+    "timestamp": "2026-09-02T07:22:53.347Z",
+    "_id": "act_1788333773347_0pafy"
   }
 ]

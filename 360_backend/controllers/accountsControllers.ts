@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 // ==================== INVOICES ====================
 export async function getInvoices(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, customerId, search } = req.query;
-    let invoices = db.invoices.getAll();
+    let invoices = db.invoices.getAll().filter(i => matchesTenant(i, req));
 
     if (status) invoices = invoices.filter(i => i.status === status);
     if (customerId) invoices = invoices.filter(i => i.customerId === customerId);
@@ -30,10 +30,10 @@ export async function getInvoices(req: AuthenticatedRequest, res: Response) {
 export async function getInvoiceById(req: AuthenticatedRequest, res: Response) {
   try {
     const id = req.params.id;
-    const inv = db.invoices.findById(id) || db.invoices.findOne(i => i.invoiceNumber === id || i.salesOrderId === id);
-    if (!inv) return res.status(404).json({ success: false, message: 'Invoice not found' });
+    const inv = db.invoices.findById(id) || db.invoices.findOne(i => matchesTenant(i, req) && (i.invoiceNumber === id || i.salesOrderId === id));
+    if (!inv || !matchesTenant(inv, req)) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    const customer = db.customers.findById(inv.customerId) || db.customers.findOne(c => c.name === inv.customerName);
+    const customer = db.customers.findById(inv.customerId) || db.customers.findOne(c => matchesTenant(c, req) && c.name === inv.customerName);
 
     return res.json({ success: true, data: { ...inv, customer } });
   } catch (err: any) {
@@ -59,8 +59,10 @@ export async function createInvoice(req: AuthenticatedRequest, res: Response) {
 
     const count = db.invoices.countDocuments() + 1;
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newInvoice = db.invoices.insertOne({
+      adminId,
       invoiceNumber,
       salesOrderId,
       customerId,
@@ -104,7 +106,7 @@ export async function createInvoice(req: AuthenticatedRequest, res: Response) {
 export async function getPayments(req: AuthenticatedRequest, res: Response) {
   try {
     const { type, search } = req.query;
-    let payments = db.payments.getAll();
+    let payments = db.payments.getAll().filter(p => matchesTenant(p, req));
 
     if (type) payments = payments.filter(p => p.type === type);
     if (search) {
@@ -159,6 +161,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
 
     const count = db.payments.countDocuments() + 1;
     const paymentNumber = `PAY-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     // 1. If linked to invoice, adjust invoice balance and determine customerId
     let linkedInvoiceNumber = req.body.invoiceNumber || '';
@@ -188,7 +191,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
     // 2. Adjust Customer Outstanding Ledger Balance
     const targetCustId = pPartyId || customerId;
     if (targetCustId && targetCustId !== 'client_ref') {
-      const customer = db.customers.findById(targetCustId) || db.customers.findOne(c => c.name === pPartyName || c.companyName === pPartyName);
+      const customer = db.customers.findById(targetCustId) || db.customers.findOne(c => matchesTenant(c, req) && (c.name === pPartyName || c.companyName === pPartyName));
       if (customer) {
         const nextCustomerBalance = Math.max(0, (customer.outstandingBalance || 0) - pAmount);
         db.customers.updateById(customer._id, {
@@ -198,6 +201,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
 
         // Add to customer activity timeline
         db.activityTimeline.insertOne({
+          adminId,
           entityType: 'CUSTOMER',
           entityId: customer._id,
           action: 'PAYMENT',
@@ -210,6 +214,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
 
     // 3. Save comprehensive payment document
     const newPayment = db.payments.insertOne({
+      adminId,
       paymentNumber,
       invoiceId: invoiceId || undefined,
       invoiceNumber: linkedInvoiceNumber || undefined,
@@ -231,6 +236,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'PAYMENT',
       entityId: newPayment._id,
       action: 'CREATE',
@@ -255,7 +261,7 @@ export async function createPayment(req: AuthenticatedRequest, res: Response) {
 export async function getExpenses(req: AuthenticatedRequest, res: Response) {
   try {
     const { category, status } = req.query;
-    let expenses = db.expenses.getAll();
+    let expenses = db.expenses.getAll().filter(e => matchesTenant(e, req));
 
     if (category) expenses = expenses.filter(e => e.category === category);
     if (status) expenses = expenses.filter(e => e.status === status);
@@ -279,8 +285,10 @@ export async function createExpense(req: AuthenticatedRequest, res: Response) {
 
     const count = db.expenses.countDocuments() + 1;
     const expenseNumber = `EXP-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newExpense = db.expenses.insertOne({
+      adminId,
       expenseNumber,
       title,
       category: category || 'Operations',
@@ -311,7 +319,7 @@ export async function createExpense(req: AuthenticatedRequest, res: Response) {
 // ==================== RECEIVABLES & PAYABLES ====================
 export async function getReceivables(req: AuthenticatedRequest, res: Response) {
   try {
-    const invoices = db.invoices.getAll().filter(i => i.dueAmount > 0 && i.status !== 'CANCELLED');
+    const invoices = db.invoices.getAll().filter(i => matchesTenant(i, req) && i.dueAmount > 0 && i.status !== 'CANCELLED');
     const totalReceivable = invoices.reduce((acc, i) => acc + (i.dueAmount || 0), 0);
 
     return res.json({
@@ -329,7 +337,7 @@ export async function getReceivables(req: AuthenticatedRequest, res: Response) {
 
 export async function getPayables(req: AuthenticatedRequest, res: Response) {
   try {
-    const purchases = db.purchases.getAll().filter(p => p.paymentStatus !== 'PAID');
+    const purchases = db.purchases.getAll().filter(p => matchesTenant(p, req) && p.paymentStatus !== 'PAID');
     const totalPayable = purchases.reduce((acc, p) => acc + ((p.grandTotal || 0) - (p.paidAmount || 0)), 0);
 
     return res.json({
@@ -348,7 +356,7 @@ export async function getPayables(req: AuthenticatedRequest, res: Response) {
 // ==================== CREDIT NOTES ====================
 export async function getCreditNotes(req: AuthenticatedRequest, res: Response) {
   try {
-    const notes = db.creditNotes.getAll();
+    const notes = db.creditNotes.getAll().filter(n => matchesTenant(n, req));
     return res.json({ success: true, data: notes });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -366,8 +374,10 @@ export async function createCreditNote(req: AuthenticatedRequest, res: Response)
 
     const count = db.creditNotes.countDocuments() + 1;
     const creditNoteNumber = `CN-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newNote = db.creditNotes.insertOne({
+      adminId,
       creditNoteNumber,
       invoiceId,
       customerId: customerId || 'cust_ref',

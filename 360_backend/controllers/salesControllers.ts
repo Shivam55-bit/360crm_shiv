@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 // ==========================================
@@ -10,9 +10,9 @@ import { recordAuditLog } from '../middleware/audit';
 export async function getLeads(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, source, priority, assignedTo, search, dateFilter, fromDate, toDate, month } = req.query;
-    let allLeads = db.leads.getAll();
+    let allLeads = db.leads.getAll().filter(l => matchesTenant(l, req));
 
-    // 1. Overall System KPI Stats (ALWAYS computed across ALL leads in the CRM platform)
+    // 1. Overall System KPI Stats (computed across leads belonging to this tenant)
     const totalLeads = allLeads.length;
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -169,7 +169,10 @@ export async function createLead(req: AuthenticatedRequest, res: Response) {
     const count = db.leads.countDocuments();
     const leadCode = `LD-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
+    const adminId = getTenantAdminId(req);
+
     const newLead = db.leads.insertOne({
+      adminId,
       leadCode,
       name,
       companyName: companyName || '',
@@ -191,6 +194,7 @@ export async function createLead(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'LEAD',
       entityId: newLead._id,
       action: 'CREATE',
@@ -218,6 +222,7 @@ export async function updateLead(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId: existing.adminId,
       entityType: 'LEAD',
       entityId: id,
       action: 'UPDATE',
@@ -235,9 +240,9 @@ export async function updateLead(req: AuthenticatedRequest, res: Response) {
 
 export async function getSalesReps(req: AuthenticatedRequest, res: Response) {
   try {
-    const employees = db.employees.find(e => e.status === 'ACTIVE');
-    const users = db.users.find(u => u.status === 'ACTIVE');
-    const allLeads = db.leads.getAll();
+    const employees = db.employees.find(e => e.status === 'ACTIVE' && matchesTenant(e, req));
+    const users = db.users.find(u => u.status === 'ACTIVE' && matchesTenant(u, req));
+    const allLeads = db.leads.getAll().filter(l => matchesTenant(l, req));
 
     // Map active employees
     const repList = employees.map(emp => {
@@ -410,12 +415,14 @@ export async function convertLead(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Lead has already been converted to a Customer account.' });
     }
 
-    let customer = db.customers.findOne(c => c.phone === lead.phone || (lead.email && c.email === lead.email));
+    const adminId = lead.adminId || getTenantAdminId(req);
+    let customer = db.customers.findOne(c => matchesTenant(c, req) && (c.phone === lead.phone || (lead.email && c.email === lead.email)));
 
     if (!customer) {
       const custCount = db.customers.countDocuments();
       const customerCode = `CUST-${new Date().getFullYear()}-${String(custCount + 1).padStart(4, '0')}`;
       customer = db.customers.insertOne({
+        adminId,
         customerCode,
         name: lead.name,
         companyName: lead.companyName || lead.name,
@@ -457,6 +464,7 @@ export async function convertLead(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'LEAD',
       entityId: id,
       action: 'CONVERT',
@@ -466,6 +474,7 @@ export async function convertLead(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'CUSTOMER',
       entityId: customer._id,
       action: 'CREATE',
@@ -496,7 +505,7 @@ export async function convertLead(req: AuthenticatedRequest, res: Response) {
 export async function getCustomers(req: AuthenticatedRequest, res: Response) {
   try {
     const { search, status } = req.query;
-    let customers = db.customers.getAll();
+    let customers = db.customers.getAll().filter(c => matchesTenant(c, req));
 
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(c => c.status === 'ACTIVE').length;
@@ -542,18 +551,20 @@ export async function getCustomerDetails(req: AuthenticatedRequest, res: Respons
     const customer = db.customers.findById(id);
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
 
-    const quotations = db.quotations.find(q => q.customerId === id);
-    const salesOrders = db.salesOrders.find(s => s.customerId === id);
-    const invoices = db.invoices.find(i => i.customerId === id);
+    const quotations = db.quotations.find(q => q.customerId === id && matchesTenant(q, req));
+    const salesOrders = db.salesOrders.find(s => s.customerId === id && matchesTenant(s, req));
+    const invoices = db.invoices.find(i => i.customerId === id && matchesTenant(i, req));
     const invoiceIds = new Set(invoices.map(i => i._id));
     const payments = db.payments.find(p =>
-      p.customerId === id ||
-      p.partyId === id ||
-      (p.customerName && p.customerName === customer.name) ||
-      (p.partyName && p.partyName === customer.name) ||
-      (p.invoiceId && invoiceIds.has(p.invoiceId))
+      matchesTenant(p, req) && (
+        p.customerId === id ||
+        p.partyId === id ||
+        (p.customerName && p.customerName === customer.name) ||
+        (p.partyName && p.partyName === customer.name) ||
+        (p.invoiceId && invoiceIds.has(p.invoiceId))
+      )
     );
-    const timeline = db.activityTimeline.find(t => t.entityId === id || t.entityId === customer.name);
+    const timeline = db.activityTimeline.find(t => matchesTenant(t, req) && (t.entityId === id || t.entityId === customer.name));
 
     return res.json({
       success: true,
@@ -578,15 +589,17 @@ export async function createCustomer(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Customer name and phone are required' });
     }
 
-    const existing = db.customers.findOne(c => c.phone === phone);
+    const existing = db.customers.findOne(c => matchesTenant(c, req) && c.phone === phone);
     if (existing) {
       return res.status(400).json({ success: false, message: `A customer account with phone ${phone} already exists (${existing.name}).` });
     }
 
     const count = db.customers.countDocuments();
     const customerCode = `CUST-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newCustomer = db.customers.insertOne({
+      adminId,
       customerCode,
       name,
       companyName: companyName || name,
@@ -608,6 +621,7 @@ export async function createCustomer(req: AuthenticatedRequest, res: Response) {
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'CUSTOMER',
       entityId: newCustomer._id,
       action: 'CREATE',
@@ -662,7 +676,7 @@ export async function deleteCustomer(req: AuthenticatedRequest, res: Response) {
 export async function getQuotations(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, customerId, search } = req.query;
-    let quotations = db.quotations.getAll();
+    let quotations = db.quotations.getAll().filter(q => matchesTenant(q, req));
 
     const totalQuotes = quotations.length;
     const draftQuotes = quotations.filter(q => q.status === 'DRAFT').length;
@@ -741,8 +755,10 @@ export async function createQuotation(req: AuthenticatedRequest, res: Response) 
 
     const count = db.quotations.countDocuments();
     const quotationNumber = `QT-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newQuotation = db.quotations.insertOne({
+      adminId,
       quotationNumber,
       version: 1,
       customerId,
@@ -764,6 +780,7 @@ export async function createQuotation(req: AuthenticatedRequest, res: Response) 
     });
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'QUOTATION',
       entityId: newQuotation._id,
       action: 'CREATE',
@@ -794,6 +811,7 @@ export async function approveQuotation(req: AuthenticatedRequest, res: Response)
     });
 
     db.activityTimeline.insertOne({
+      adminId: quote.adminId,
       entityType: 'QUOTATION',
       entityId: id,
       action: 'APPROVE',
@@ -821,8 +839,10 @@ export async function convertQuotationToSalesOrder(req: AuthenticatedRequest, re
 
     const count = db.salesOrders.countDocuments();
     const salesOrderNumber = `SO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    const adminId = quote.adminId || getTenantAdminId(req);
 
     const newSO = db.salesOrders.insertOne({
+      adminId,
       salesOrderNumber,
       customerId: quote.customerId,
       customerName: quote.customerName,
@@ -864,6 +884,7 @@ export async function convertQuotationToSalesOrder(req: AuthenticatedRequest, re
     }
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'SALES_ORDER',
       entityId: newSO._id,
       action: 'CREATE',
@@ -886,7 +907,7 @@ export async function convertQuotationToSalesOrder(req: AuthenticatedRequest, re
 export async function getSalesOrders(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, stage, customerId, search } = req.query;
-    let orders = db.salesOrders.getAll();
+    let orders = db.salesOrders.getAll().filter(o => matchesTenant(o, req));
 
     const totalOrders = orders.length;
     const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length;
@@ -963,8 +984,10 @@ export async function createSalesOrder(req: AuthenticatedRequest, res: Response)
     const grandTotal = Math.round(subTotal + taxAmount + shp);
     const count = db.salesOrders.countDocuments();
     const salesOrderNumber = `SO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newSO = db.salesOrders.insertOne({
+      adminId,
       salesOrderNumber,
       customerId,
       customerName: customerName || 'Valued Customer',
@@ -996,6 +1019,7 @@ export async function createSalesOrder(req: AuthenticatedRequest, res: Response)
     }
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'SALES_ORDER',
       entityId: newSO._id,
       action: 'CREATE',
@@ -1049,6 +1073,7 @@ export async function updateSalesOrderStatus(req: AuthenticatedRequest, res: Res
     });
 
     db.activityTimeline.insertOne({
+      adminId: existing.adminId,
       entityType: 'SALES_ORDER',
       entityId: id,
       action: 'STATUS_CHANGE',
@@ -1097,8 +1122,10 @@ export async function generateOrderInvoice(req: AuthenticatedRequest, res: Respo
 
     const invCount = db.invoices.countDocuments();
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invCount + 1).padStart(4, '0')}`;
+    const adminId = order.adminId || getTenantAdminId(req);
 
     const newInvoice = db.invoices.insertOne({
+      adminId,
       invoiceNumber,
       salesOrderId: order._id,
       customerId: order.customerId,
@@ -1137,6 +1164,7 @@ export async function generateOrderInvoice(req: AuthenticatedRequest, res: Respo
     }
 
     db.activityTimeline.insertOne({
+      adminId,
       entityType: 'INVOICE',
       entityId: newInvoice._id,
       action: 'CREATE',
@@ -1159,7 +1187,7 @@ export async function generateOrderInvoice(req: AuthenticatedRequest, res: Respo
 export async function getFollowUps(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, type, priority, leadId, customerId } = req.query;
-    let followUps = db.followUps.getAll();
+    let followUps = db.followUps.getAll().filter(f => matchesTenant(f, req));
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -1201,7 +1229,10 @@ export async function createFollowUp(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Title and communication type are required' });
     }
 
+    const adminId = getTenantAdminId(req);
+
     const newFup = db.followUps.insertOne({
+      adminId,
       leadId,
       customerId,
       leadName: leadName || '',
@@ -1219,6 +1250,7 @@ export async function createFollowUp(req: AuthenticatedRequest, res: Response) {
 
     if (leadId) {
       db.activityTimeline.insertOne({
+        adminId,
         entityType: 'LEAD',
         entityId: leadId,
         action: 'SCHEDULE_FOLLOWUP',
@@ -1251,6 +1283,7 @@ export async function completeFollowUp(req: AuthenticatedRequest, res: Response)
 
     if (existing.leadId) {
       db.activityTimeline.insertOne({
+        adminId: existing.adminId,
         entityType: 'LEAD',
         entityId: existing.leadId,
         action: 'COMPLETE_FOLLOWUP',
@@ -1273,11 +1306,11 @@ export async function completeFollowUp(req: AuthenticatedRequest, res: Response)
 
 export async function getSalesReportsData(req: AuthenticatedRequest, res: Response) {
   try {
-    const orders = db.salesOrders.getAll();
-    const invoices = db.invoices.getAll();
-    const leads = db.leads.getAll();
-    const quotations = db.quotations.getAll();
-    const customers = db.customers.getAll();
+    const orders = db.salesOrders.getAll().filter(o => matchesTenant(o, req));
+    const invoices = db.invoices.getAll().filter(i => matchesTenant(i, req));
+    const leads = db.leads.getAll().filter(l => matchesTenant(l, req));
+    const quotations = db.quotations.getAll().filter(q => matchesTenant(q, req));
+    const customers = db.customers.getAll().filter(c => matchesTenant(c, req));
 
     const totalRevenue = invoices.reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0);
     const totalCollected = invoices.reduce((sum, i) => sum + (Number(i.paidAmount) || 0), 0);
@@ -1371,8 +1404,10 @@ export async function logLeadCall(req: AuthenticatedRequest, res: Response) {
 
     const callerName = req.user?.name || 'Sales Representative';
     const callerId = req.user?.userId || 'usr_emp_1';
+    const adminId = lead.adminId || getTenantAdminId(req);
 
     const newCallLog = db.callLogs.insertOne({
+      adminId,
       leadId,
       leadName: lead.name,
       leadPhone: lead.phone,
@@ -1409,6 +1444,7 @@ export async function logLeadCall(req: AuthenticatedRequest, res: Response) {
     let scheduledFollowUp = null;
     if (followUpDate) {
       scheduledFollowUp = db.followUps.insertOne({
+        adminId,
         leadId,
         type: 'Call',
         title: `Follow-up with ${lead.name} (${lead.companyName || lead.phone})`,
@@ -1444,7 +1480,7 @@ export async function logLeadCall(req: AuthenticatedRequest, res: Response) {
 export async function getLeadCallLogs(req: AuthenticatedRequest, res: Response) {
   try {
     const leadId = req.params.id;
-    let logs = db.callLogs.find(c => c.leadId === leadId);
+    let logs = db.callLogs.find(c => c.leadId === leadId && matchesTenant(c, req));
     logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return res.json({ success: true, data: logs });
   } catch (err: any) {
@@ -1455,7 +1491,7 @@ export async function getLeadCallLogs(req: AuthenticatedRequest, res: Response) 
 export async function getAllCallLogs(req: AuthenticatedRequest, res: Response) {
   try {
     const { employeeId, outcome, leadId } = req.query;
-    let logs = db.callLogs.getAll();
+    let logs = db.callLogs.getAll().filter(c => matchesTenant(c, req));
 
     if (leadId) logs = logs.filter(c => c.leadId === leadId);
     if (employeeId) logs = logs.filter(c => c.employeeId === employeeId);
@@ -1481,5 +1517,6 @@ export async function deleteCallLog(req: AuthenticatedRequest, res: Response) {
     return res.status(500).json({ success: false, message: err.message });
   }
 }
+
 
 

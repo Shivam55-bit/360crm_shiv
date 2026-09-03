@@ -1,13 +1,28 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 export async function getAllUsers(req: AuthenticatedRequest, res: Response) {
   try {
-    const { role, status, search } = req.query;
+    const { role, status, search, adminId } = req.query;
     let users = db.users.getAll();
+
+    // Multi-tenant user scoping:
+    if (req.user && req.user.role !== 'SUPER_ADMIN') {
+      const userAdminId = req.user.role === 'ADMIN' ? (req.user.adminId || req.user.userId) : (req.user.adminId || 'usr_admin_main');
+      users = users.filter(u => {
+        const uAdmin = u.adminId || (u.role === 'ADMIN' ? u._id : 'usr_admin_main');
+        return uAdmin === userAdminId || u._id === req.user?.userId;
+      });
+    } else if (req.user?.role === 'SUPER_ADMIN' && adminId) {
+      const targetAdmin = String(adminId);
+      users = users.filter(u => {
+        const uAdmin = u.adminId || (u.role === 'ADMIN' ? u._id : 'usr_admin_main');
+        return uAdmin === targetAdmin;
+      });
+    }
 
     if (role) {
       users = users.filter(u => u.role === role);
@@ -20,7 +35,8 @@ export async function getAllUsers(req: AuthenticatedRequest, res: Response) {
       users = users.filter(u =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
-        (u.phone && u.phone.includes(q))
+        (u.phone && u.phone.includes(q)) ||
+        (u.organization && u.organization.toLowerCase().includes(q))
       );
     }
 
@@ -31,7 +47,8 @@ export async function getAllUsers(req: AuthenticatedRequest, res: Response) {
       const rolePerms = u.permissionMode === 'REPLACE' ? [] : (roleDoc?.permissions || []);
       const customPerms = u.customPermissions || [];
       const effectivePermissions = Array.from(new Set([...rolePerms, ...customPerms]));
-      return { ...rest, effectivePermissions };
+      const effectiveAdminId = u.adminId || (u.role === 'ADMIN' ? u._id : 'usr_admin_main');
+      return { ...rest, adminId: effectiveAdminId, effectivePermissions };
     });
 
     return res.json({ success: true, data: sanitized });
@@ -54,10 +71,11 @@ export async function getUserById(req: AuthenticatedRequest, res: Response) {
     const rolePerms = user.permissionMode === 'REPLACE' ? [] : (roleDoc?.permissions || []);
     const customPerms = user.customPermissions || [];
     const effectivePermissions = Array.from(new Set([...rolePerms, ...customPerms]));
+    const effectiveAdminId = user.adminId || (user.role === 'ADMIN' ? user._id : 'usr_admin_main');
 
     return res.json({
       success: true,
-      data: { ...rest, effectivePermissions }
+      data: { ...rest, adminId: effectiveAdminId, effectivePermissions }
     });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -98,6 +116,9 @@ export async function createUser(req: AuthenticatedRequest, res: Response) {
       .toUpperCase()
       .substring(0, 2);
 
+    // Organization name resolution
+    const resolvedOrg = organization || (req.user?.organization) || (role === 'ADMIN' ? `${name}'s Organization` : 'SHIV SHAKTI ENTERPRISES');
+
     const newUser = db.users.insertOne({
       name,
       email: email.toLowerCase(),
@@ -105,7 +126,7 @@ export async function createUser(req: AuthenticatedRequest, res: Response) {
       phone: phone || '',
       role,
       roleId: resolvedRoleId,
-      organization: organization || 'SHIV SHAKTI ENTERPRISES',
+      organization: resolvedOrg,
       status: 'ACTIVE',
       avatar: initials || 'US',
       customPermissions: customPermissions || [],
@@ -114,6 +135,16 @@ export async function createUser(req: AuthenticatedRequest, res: Response) {
       showOnLogin: showOnLogin !== false,
       createdAt: new Date().toISOString()
     });
+
+    // Set adminId: for ADMIN, they are their own tenant root; for employees, link to current admin
+    const finalAdminId = role === 'ADMIN'
+      ? newUser._id
+      : (req.body.adminId || (req.user?.role === 'ADMIN' ? req.user.userId : req.user?.adminId) || 'usr_admin_main');
+
+    db.users.updateById(newUser._id, {
+      adminId: finalAdminId
+    });
+    newUser.adminId = finalAdminId;
 
     const { passwordHash: _, ...sanitized } = newUser;
     recordAuditLog(req, 'CREATE', 'Users', `Created user account ${name} (${role})`, newUser._id, undefined, sanitized);

@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 // ==================== PRODUCTS ====================
 export async function getProducts(req: AuthenticatedRequest, res: Response) {
   try {
     const { category, search, minStock, warehouseId } = req.query;
-    let products = db.products.getAll();
+    let products = db.products.getAll().filter(p => matchesTenant(p, req));
 
     if (category) {
       products = products.filter(p => p.category === category || p.categoryId === category);
@@ -43,13 +43,15 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Name, SKU, purchase price, and selling price are required.' });
     }
 
-    const existing = db.products.findOne(p => p.sku.toLowerCase() === sku.toLowerCase());
+    const existing = db.products.findOne(p => matchesTenant(p, req) && p.sku.toLowerCase() === sku.toLowerCase());
     if (existing) {
       return res.status(400).json({ success: false, message: `Product with SKU '${sku}' already exists.` });
     }
 
+    const adminId = getTenantAdminId(req);
     const currentStock = Number(initialStock) || 0;
     const newProduct = db.products.insertOne({
+      adminId,
       name,
       sku: sku.toUpperCase(),
       category: category || 'General',
@@ -70,6 +72,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
 
     if (currentStock > 0) {
       db.stockTransactions.insertOne({
+        adminId,
         productId: newProduct._id,
         productName: newProduct.name,
         sku: newProduct.sku,
@@ -135,7 +138,7 @@ export async function deleteProduct(req: AuthenticatedRequest, res: Response) {
 // ==================== CATEGORIES ====================
 export async function getCategories(req: AuthenticatedRequest, res: Response) {
   try {
-    const categories = db.categories.getAll();
+    const categories = db.categories.getAll().filter(c => matchesTenant(c, req));
     return res.json({ success: true, data: categories });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -149,7 +152,9 @@ export async function createCategory(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Category name is required' });
     }
 
+    const adminId = getTenantAdminId(req);
     const newCat = db.categories.insertOne({
+      adminId,
       name,
       description: description || '',
       parentId: parentId || undefined,
@@ -166,7 +171,7 @@ export async function createCategory(req: AuthenticatedRequest, res: Response) {
 // ==================== WAREHOUSES ====================
 export async function getWarehouses(req: AuthenticatedRequest, res: Response) {
   try {
-    const warehouses = db.warehouses.getAll();
+    const warehouses = db.warehouses.getAll().filter(w => matchesTenant(w, req));
     return res.json({ success: true, data: warehouses });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -180,7 +185,9 @@ export async function createWarehouse(req: AuthenticatedRequest, res: Response) 
       return res.status(400).json({ success: false, message: 'Warehouse name is required' });
     }
 
+    const adminId = getTenantAdminId(req);
     const newWh = db.warehouses.insertOne({
+      adminId,
       name,
       code: code || `WH_${Date.now().toString().slice(-4)}`,
       address: address || '',
@@ -203,7 +210,7 @@ export async function createWarehouse(req: AuthenticatedRequest, res: Response) 
 // ==================== INVENTORY SUMMARY & TRANSACTIONS ====================
 export async function getInventorySummary(req: AuthenticatedRequest, res: Response) {
   try {
-    const products = db.products.getAll();
+    const products = db.products.getAll().filter(p => matchesTenant(p, req));
     const totalItems = products.length;
     const totalStockQuantity = products.reduce((acc, p) => acc + (p.currentStock || 0), 0);
     const totalStockValue = products.reduce((acc, p) => acc + ((p.currentStock || 0) * (p.purchasePrice || 0)), 0);
@@ -242,7 +249,9 @@ export async function performStockIn(req: AuthenticatedRequest, res: Response) {
     const updatedStock = (product.currentStock || 0) + qty;
     db.products.updateById(productId, { currentStock: updatedStock });
 
+    const adminId = product.adminId || getTenantAdminId(req);
     const tx = db.stockTransactions.insertOne({
+      adminId,
       productId: product._id,
       productName: product.name,
       sku: product.sku,
@@ -295,7 +304,9 @@ export async function performStockOut(req: AuthenticatedRequest, res: Response) 
     const updatedStock = (product.currentStock || 0) - qty;
     db.products.updateById(productId, { currentStock: updatedStock });
 
+    const adminId = product.adminId || getTenantAdminId(req);
     const tx = db.stockTransactions.insertOne({
+      adminId,
       productId: product._id,
       productName: product.name,
       sku: product.sku,
@@ -326,7 +337,7 @@ export async function performStockOut(req: AuthenticatedRequest, res: Response) 
 export async function getStockTransactions(req: AuthenticatedRequest, res: Response) {
   try {
     const { productId, type, warehouseId } = req.query;
-    let list = db.stockTransactions.getAll();
+    let list = db.stockTransactions.getAll().filter(t => matchesTenant(t, req));
 
     if (productId) list = list.filter(t => t.productId === productId);
     if (type) list = list.filter(t => t.type === type);
@@ -344,7 +355,7 @@ export async function getStockTransactions(req: AuthenticatedRequest, res: Respo
 export async function getSuppliers(req: AuthenticatedRequest, res: Response) {
   try {
     const { search } = req.query;
-    let suppliers = db.suppliers.getAll();
+    let suppliers = db.suppliers.getAll().filter(s => matchesTenant(s, req));
 
     if (search) {
       const q = String(search).toLowerCase();
@@ -369,7 +380,9 @@ export async function createSupplier(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'Supplier name and phone are required.' });
     }
 
+    const adminId = getTenantAdminId(req);
     const newSupplier = db.suppliers.insertOne({
+      adminId,
       name,
       contactPerson: contactPerson || '',
       email: email || '',
@@ -414,7 +427,7 @@ export async function updateSupplier(req: AuthenticatedRequest, res: Response) {
 export async function getPurchases(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, supplierId } = req.query;
-    let purchases = db.purchases.getAll();
+    let purchases = db.purchases.getAll().filter(p => matchesTenant(p, req));
 
     if (status) purchases = purchases.filter(p => p.status === status);
     if (supplierId) purchases = purchases.filter(p => p.supplierId === supplierId);
@@ -444,8 +457,10 @@ export async function createPurchase(req: AuthenticatedRequest, res: Response) {
 
     const count = db.purchases.countDocuments() + 1;
     const purchaseNumber = `PO-${new Date().getFullYear()}-${String(count).padStart(4, '0')}`;
+    const adminId = getTenantAdminId(req);
 
     const newPO = db.purchases.insertOne({
+      adminId,
       purchaseNumber,
       supplierId,
       supplierName: supplierName || 'Supplier Partner',
@@ -491,6 +506,8 @@ export async function receivePurchase(req: AuthenticatedRequest, res: Response) 
       return res.status(400).json({ success: false, message: 'This PO has already been received into stock.' });
     }
 
+    const adminId = po.adminId || getTenantAdminId(req);
+
     // Automatically increase inventory stock
     for (const item of po.items) {
       const product = db.products.findById(item.productId);
@@ -499,6 +516,7 @@ export async function receivePurchase(req: AuthenticatedRequest, res: Response) 
         db.products.updateById(item.productId, { currentStock: nextStock });
 
         db.stockTransactions.insertOne({
+          adminId,
           productId: product._id,
           productName: product.name,
           sku: product.sku,

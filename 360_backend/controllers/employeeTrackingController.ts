@@ -7,7 +7,7 @@
 
 import { Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 import { TrackingEngineService } from '../tracking/trackingEngine.service';
 import { TrackingPolicyService } from '../tracking/policy.service';
@@ -23,9 +23,9 @@ function resolveCurrentEmployee(req: AuthenticatedRequest): EmployeeDoc | null {
 
   const userId = user.userId;
   // Match by userId or email or name
-  let emp = db.employees.findOne(e => e.userId === userId || (e.email && e.email.toLowerCase() === user.email.toLowerCase()));
+  let emp = db.employees.findOne(e => matchesTenant(e, req) && (e.userId === userId || (e.email && e.email.toLowerCase() === user.email.toLowerCase())));
   if (!emp && user.name) {
-    emp = db.employees.findOne(e => e.name.toLowerCase() === user.name.toLowerCase());
+    emp = db.employees.findOne(e => matchesTenant(e, req) && e.name.toLowerCase() === user.name.toLowerCase());
   }
   return emp;
 }
@@ -238,7 +238,7 @@ export async function getTrackingHealth(req: AuthenticatedRequest, res: Response
  */
 export async function getTeamTrackingHealth(req: AuthenticatedRequest, res: Response) {
   try {
-    const allEmployees = db.employees.getAll();
+    const allEmployees = db.employees.getAll().filter(e => matchesTenant(e, req));
     const latestLocations = db.latestLocations.getAll();
     const locMap = new Map<string, any>();
     latestLocations.forEach(l => locMap.set(l.employeeId, l));
@@ -411,7 +411,7 @@ export async function postMyConsent(req: AuthenticatedRequest, res: Response) {
  */
 export async function getLiveEmployees(req: AuthenticatedRequest, res: Response) {
   try {
-    const allEmployees = db.employees.getAll();
+    const allEmployees = db.employees.getAll().filter(e => matchesTenant(e, req));
     const latestLocations = db.latestLocations.getAll();
 
     // Map by employee ID for instant lookup

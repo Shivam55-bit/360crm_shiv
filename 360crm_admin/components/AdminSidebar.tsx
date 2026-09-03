@@ -264,11 +264,11 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, 
         <div className="p-4 flex items-center justify-between border-b border-slate-800/80 bg-[#070b16]">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl ${isEmployee ? 'bg-gradient-to-tr from-emerald-600 to-teal-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-500'} text-white font-black flex items-center justify-center text-sm shadow-md tracking-wider`}>
-              {isEmployee ? 'EP' : 'SS'}
+              {isEmployee ? 'EP' : (user?.organization ? user.organization.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase() : 'CRM')}
             </div>
-            <div>
-              <h1 className="text-sm font-bold text-white tracking-wide uppercase leading-tight">
-                {isEmployee ? 'EMPLOYEE PORTAL' : 'SHIV SHAKTI'}
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-white tracking-wide uppercase leading-tight truncate max-w-[145px]" title={user?.organization || 'Enterprise ERP'}>
+                {isEmployee ? 'EMPLOYEE PORTAL' : (user?.organization || '360CRM ERP')}
               </h1>
               <p className="text-[10px] text-blue-400 font-semibold tracking-wider uppercase">
                 {isEmployee ? 'Field & Calling Desk' : isHrUser ? 'HR Management' : 'Enterprise ERP'}

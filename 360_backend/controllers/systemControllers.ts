@@ -1,21 +1,28 @@
 import { Response } from 'express';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 import { TradeIndiaSyncService } from '../services/tradeIndiaSync.service';
 
-// DASHBOARD STATS (Exact match with screenshot & live data)
+// DASHBOARD STATS (Exact match with screenshot & live data, scoped per tenant)
 export async function getDashboardStats(req: AuthenticatedRequest, res: Response) {
   try {
-    const totalLeads = db.leads.countDocuments();
-    const totalCustomers = db.customers.countDocuments();
-    const totalInvoices = db.invoices.countDocuments();
-    const totalProducts = db.products.countDocuments();
+    const leads = (db.leads.getAll() || []).filter(item => matchesTenant(item, req));
+    const customers = (db.customers.getAll() || []).filter(item => matchesTenant(item, req));
+    const invoices = (db.invoices.getAll() || []).filter(item => matchesTenant(item, req));
+    const products = (db.products.getAll() || []).filter(item => matchesTenant(item, req));
+    const purchases = (db.purchases.getAll() || []).filter(item => matchesTenant(item, req));
+    const employees = (db.employees.getAll() || []).filter(item => matchesTenant(item, req));
+    const campaigns = (db.campaigns.getAll() || []).filter(item => matchesTenant(item, req));
+    const followUps = (db.followUps.getAll() || []).filter(item => matchesTenant(item, req));
+    const quotations = (db.quotations.getAll() || []).filter(item => matchesTenant(item, req));
+    const salesOrders = (db.salesOrders.getAll() || []).filter(item => matchesTenant(item, req));
+    const payments = (db.payments.getAll() || []).filter(item => matchesTenant(item, req));
 
-    // Additional financials calculated dynamically from database
-    const invoices = db.invoices.getAll() || [];
-    const purchases = db.purchases.getAll() || [];
-    const products = db.products.getAll() || [];
+    const totalLeads = leads.length;
+    const totalCustomers = customers.length;
+    const totalInvoices = invoices.length;
+    const totalProducts = products.length;
 
     // 1. TOTAL SALES INVOICED: Sum of grandTotal for valid/active invoices
     const validInvoices = invoices.filter(i => i && i.status !== 'CANCELLED');
@@ -44,17 +51,17 @@ export async function getDashboardStats(req: AuthenticatedRequest, res: Response
       return acc;
     }, 0);
 
-    const totalEmployees = db.employees.countDocuments();
-    const activeCampaigns = db.campaigns.countDocuments(c => c.status === 'ACTIVE');
+    const totalEmployees = employees.length;
+    const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE').length;
 
     // Business flow status counts
     const flowStats = {
       leads: totalLeads,
-      followUps: db.followUps.countDocuments(f => f.status === 'PENDING'),
-      quotations: db.quotations.countDocuments(),
-      salesOrders: db.salesOrders.countDocuments(),
+      followUps: followUps.filter(f => f.status === 'PENDING').length,
+      quotations: quotations.length,
+      salesOrders: salesOrders.length,
       invoices: totalInvoices,
-      payments: db.payments.countDocuments()
+      payments: payments.length
     };
 
     // ERP Module health / status list matching screenshot
@@ -137,57 +144,57 @@ export async function getReports(req: AuthenticatedRequest, res: Response) {
 
     switch (reportType) {
       case 'sales':
-        reportData = db.salesOrders.getAll();
+        reportData = db.salesOrders.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'leads':
-        reportData = db.leads.getAll();
+        reportData = db.leads.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'customers':
-        reportData = db.customers.getAll();
+        reportData = db.customers.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'quotations':
-        reportData = db.quotations.getAll();
+        reportData = db.quotations.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'inventory':
       case 'stock':
-        reportData = db.products.getAll().map(p => ({
+        reportData = db.products.getAll().filter(item => matchesTenant(item, req)).map(p => ({
           name: p.name,
           sku: p.sku,
           category: p.category,
           currentStock: p.currentStock,
           stockValue: p.currentStock * p.purchasePrice,
-          status: p.currentStock <= p.minStock ? 'LOW_STOCK' : 'IN_STOCK'
+          status: p.currentStock <= (p.minStock || 0) ? 'LOW_STOCK' : 'IN_STOCK'
         }));
         break;
       case 'stock_transactions':
-        reportData = db.stockTransactions.getAll();
+        reportData = db.stockTransactions.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'purchases':
-        reportData = db.purchases.getAll();
+        reportData = db.purchases.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'suppliers':
-        reportData = db.suppliers.getAll();
+        reportData = db.suppliers.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'invoices':
-        reportData = db.invoices.getAll();
+        reportData = db.invoices.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'payments':
-        reportData = db.payments.getAll();
+        reportData = db.payments.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'expenses':
-        reportData = db.expenses.getAll();
+        reportData = db.expenses.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'employees':
-        reportData = db.employees.getAll();
+        reportData = db.employees.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'attendance':
-        reportData = db.attendance.getAll();
+        reportData = db.attendance.getAll().filter(item => matchesTenant(item, req));
         break;
       case 'salaries':
-        reportData = db.salaries.getAll();
+        reportData = db.salaries.getAll().filter(item => matchesTenant(item, req));
         break;
       default:
-        reportData = db.invoices.getAll();
+        reportData = db.invoices.getAll().filter(item => matchesTenant(item, req));
     }
 
     return res.json({
@@ -421,6 +428,10 @@ export async function getAuditLogs(req: AuthenticatedRequest, res: Response) {
   try {
     const { action, module: mod, userId, search } = req.query;
     let logs = db.auditLogs.getAll();
+
+    if (req.user && req.user.role !== 'SUPER_ADMIN') {
+      logs = logs.filter(l => matchesTenant(l, req));
+    }
 
     if (action) logs = logs.filter(l => l.action === action);
     if (mod) logs = logs.filter(l => l.module === mod);

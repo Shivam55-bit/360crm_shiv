@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../database/db';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, matchesTenant, getTenantAdminId } from '../middleware/auth';
 import { recordAuditLog } from '../middleware/audit';
 
 function parseAttendanceTime(value?: string) {
@@ -30,7 +30,7 @@ function calculateWorkHours(checkIn?: string, checkOut?: string) {
 export async function getEmployees(req: AuthenticatedRequest, res: Response) {
   try {
     const { department, status, search } = req.query;
-    let employees = db.employees.getAll();
+    let employees = db.employees.getAll().filter(e => matchesTenant(e, req));
     if (department) employees = employees.filter(e => e.department === department);
     if (status) employees = employees.filter(e => e.status === status);
     if (search) {
@@ -59,6 +59,7 @@ export async function createEmployee(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, message: 'An account with this email already exists' });
     }
 
+    const adminId = getTenantAdminId(req);
     const count = db.employees.countDocuments() + 1;
     const employeeId = `EMP-${String(count).padStart(4, '0')}`;
 
@@ -72,6 +73,7 @@ export async function createEmployee(req: AuthenticatedRequest, res: Response) {
     if (department === 'HR & Admin') role = 'HR_EMPLOYEE';
 
     const newUser = db.users.insertOne({
+      adminId,
       name,
       email,
       phone: phone || '',
@@ -83,6 +85,7 @@ export async function createEmployee(req: AuthenticatedRequest, res: Response) {
     });
 
     const newEmp = db.employees.insertOne({
+      adminId,
       employeeId,
       name,
       email,
@@ -180,7 +183,7 @@ export async function deleteEmployee(req: AuthenticatedRequest, res: Response) {
 export async function getAttendance(req: AuthenticatedRequest, res: Response) {
   try {
     const { date, employeeId } = req.query;
-    let records = db.attendance.getAll();
+    let records = db.attendance.getAll().filter(r => matchesTenant(r, req));
     if (date) records = records.filter(r => r.date === date);
     if (employeeId) records = records.filter(r => r.employeeId === employeeId);
     records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -196,7 +199,7 @@ export async function logAttendance(req: AuthenticatedRequest, res: Response) {
     if (!employeeId) return res.status(400).json({ success: false, message: 'Employee is required' });
 
     const attDate = date || new Date().toISOString().split('T')[0];
-    const existing = db.attendance.findOne(a => a.employeeId === employeeId && a.date === attDate);
+    const existing = db.attendance.findOne(a => matchesTenant(a, req) && a.employeeId === employeeId && a.date === attDate);
 
     if (existing) {
       const updated = db.attendance.updateById(existing._id, {
@@ -214,7 +217,9 @@ export async function logAttendance(req: AuthenticatedRequest, res: Response) {
       return res.json({ success: true, message: 'Attendance updated', data: updated });
     }
 
+    const adminId = getTenantAdminId(req);
     const newAtt = db.attendance.insertOne({
+      adminId,
       employeeId,
       employeeName: employeeName || 'Employee',
       date: attDate,
@@ -440,7 +445,9 @@ export async function clockIn(req: AuthenticatedRequest, res: Response) {
       });
     }
 
+    const adminId = getTenantAdminId(req);
     const newRecord = db.attendance.insertOne({
+      adminId,
       employeeId: empId,
       employeeName: empName,
       date: today,
@@ -737,7 +744,7 @@ export async function getTodayAttendanceStatus(req: AuthenticatedRequest, res: R
 export async function getSalaries(req: AuthenticatedRequest, res: Response) {
   try {
     const { month, employeeId } = req.query;
-    let salaries = db.salaries.getAll();
+    let salaries = db.salaries.getAll().filter(s => matchesTenant(s, req));
     if (month) salaries = salaries.filter(s => s.month === month);
     if (employeeId) salaries = salaries.filter(s => s.employeeId === employeeId);
     return res.json({ success: true, data: salaries });
@@ -755,8 +762,10 @@ export async function generateSalary(req: AuthenticatedRequest, res: Response) {
     const allow = Number(allowances) || 0;
     const ded = Number(deductions) || 0;
     const netSalary = Math.max(0, basic + allow - ded);
+    const adminId = getTenantAdminId(req);
 
     const newSal = db.salaries.insertOne({
+      adminId,
       employeeId,
       employeeName: employeeName || 'Employee',
       month,
@@ -780,7 +789,7 @@ export async function generateSalary(req: AuthenticatedRequest, res: Response) {
 export async function getPerformanceReviews(req: AuthenticatedRequest, res: Response) {
   try {
     const { employeeId } = req.query;
-    let reviews = db.performance.getAll();
+    let reviews = db.performance.getAll().filter(r => matchesTenant(r, req));
     if (employeeId) reviews = reviews.filter(r => r.employeeId === employeeId);
     return res.json({ success: true, data: reviews });
   } catch (err: any) {
@@ -793,7 +802,9 @@ export async function createPerformanceReview(req: AuthenticatedRequest, res: Re
     const { employeeId, employeeName, reviewPeriod, rating, comments, goalsAchieved } = req.body;
     if (!employeeId || !rating) return res.status(400).json({ success: false, message: 'Employee and rating are required' });
 
+    const adminId = getTenantAdminId(req);
     const newPerf = db.performance.insertOne({
+      adminId,
       employeeId,
       employeeName: employeeName || 'Employee',
       reviewPeriod: reviewPeriod || 'Q1 2026',
@@ -816,7 +827,7 @@ export async function createPerformanceReview(req: AuthenticatedRequest, res: Re
 export async function getLeaves(req: AuthenticatedRequest, res: Response) {
   try {
     const { status, employeeId, search } = req.query;
-    let leaves = db.leaves.getAll();
+    let leaves = db.leaves.getAll().filter(l => matchesTenant(l, req));
 
     if (status && status !== 'ALL') {
       leaves = leaves.filter(l => l.status === status);
@@ -837,10 +848,10 @@ export async function getLeaves(req: AuthenticatedRequest, res: Response) {
 
     leaves.sort((a, b) => new Date(b.appliedAt || b.createdAt || Date.now()).getTime() - new Date(a.appliedAt || a.createdAt || Date.now()).getTime());
 
-    const total = db.leaves.countDocuments();
-    const pending = db.leaves.countDocuments(l => l.status === 'PENDING');
-    const approved = db.leaves.countDocuments(l => l.status === 'APPROVED');
-    const rejected = db.leaves.countDocuments(l => l.status === 'REJECTED');
+    const total = leaves.length;
+    const pending = leaves.filter(l => l.status === 'PENDING').length;
+    const approved = leaves.filter(l => l.status === 'APPROVED').length;
+    const rejected = leaves.filter(l => l.status === 'REJECTED').length;
 
     return res.json({
       success: true,
