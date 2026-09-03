@@ -15,7 +15,14 @@ export async function login(req: Request, res: Response) {
       });
     }
 
-    const user = db.users.findOne(u => u.email.toLowerCase() === email.toLowerCase());
+    const searchEmail = email.toLowerCase().trim();
+    const normalizedEmail = searchEmail.replace('@craftmediahub.com', '@360crm.com');
+    const altNormalizedEmail = searchEmail.replace('@360crm.com', '@craftmediahub.com');
+
+    const user = db.users.findOne(u => {
+      const uEmail = u.email.toLowerCase();
+      return uEmail === searchEmail || uEmail === normalizedEmail || uEmail === altNormalizedEmail;
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -165,7 +172,13 @@ export async function switchDemoUser(req: Request, res: Response) {
     let user = null;
 
     if (email) {
-      user = db.users.findOne(u => u.email.toLowerCase() === email.toLowerCase());
+      const searchEmail = email.toLowerCase().trim();
+      const normalizedEmail = searchEmail.replace('@craftmediahub.com', '@360crm.com');
+      const altNormalizedEmail = searchEmail.replace('@360crm.com', '@craftmediahub.com');
+      user = db.users.findOne(u => {
+        const uEmail = u.email.toLowerCase();
+        return uEmail === searchEmail || uEmail === normalizedEmail || uEmail === altNormalizedEmail;
+      });
     } else if (role) {
       user = db.users.findOne(u => u.role === role);
     }
