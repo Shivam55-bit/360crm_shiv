@@ -3,6 +3,7 @@ import cors from 'cors';
 import { db } from './database/db';
 import apiRoutes from './routes/apiRoutes';
 import { IntegrationSchedulerService } from './integrations/scheduler.service';
+import { TradeIndiaScheduler } from './scheduler/tradeIndiaScheduler';
 
 export async function createBackendApp() {
   const app = express();
@@ -10,8 +11,9 @@ export async function createBackendApp() {
   // Initialize in-memory mock/seed database
   await db.init();
 
-  // Initialize background Enterprise Integrations Scheduler
+  // Initialize background Enterprise Integrations Scheduler & TradeIndia 5-min Lead Sync
   IntegrationSchedulerService.start();
+  TradeIndiaScheduler.start();
 
   // Basic Middlewares
   app.use(cors({

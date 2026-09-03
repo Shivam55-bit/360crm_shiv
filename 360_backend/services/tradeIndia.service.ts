@@ -73,9 +73,9 @@ export class TradeIndiaService {
 
     const apiUrl = envApiUrl || dbConfig.apiUrl || dbConfig.endpointUrl || 'https://www.tradeindia.com/utils/my_buy_leads.html';
     
-    const userId = String(dbConfig.userId || dbConfig.userid || envUserId || '').trim();
-    const profileId = String(dbConfig.profileId || dbConfig.profile_id || envProfileId || '').trim();
-    const apiKey = String(dbApiKey || dbConfig.apiKey || dbConfig.key || envApiKey || '').trim();
+    const userId = String(dbConfig.userId || dbConfig.userid || envUserId || '6009750').trim();
+    const profileId = String(dbConfig.profileId || dbConfig.profile_id || envProfileId || '7954377').trim();
+    const apiKey = String(dbApiKey || dbConfig.apiKey || dbConfig.key || envApiKey || 'bcdd4ac2468a8c88c0c94c11475d0dc8').trim();
 
     const isConfigured = Boolean(
       userId && profileId && apiKey &&
