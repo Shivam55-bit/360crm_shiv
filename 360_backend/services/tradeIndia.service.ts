@@ -47,7 +47,7 @@ export interface TradeIndiaFetchResult {
 }
 
 export class TradeIndiaService {
-  private static readonly DEFAULT_TIMEOUT_MS = 15000;
+  private static readonly DEFAULT_TIMEOUT_MS = 45000;
 
   /**
    * Reads credentials from environment variables or DB integration config.
@@ -121,17 +121,10 @@ export class TradeIndiaService {
       };
     }
 
-    // Bound date range to max 14 days (TradeIndia requirement)
-    const today = new Date();
-    const minFromDate = new Date(today);
-    minFromDate.setDate(minFromDate.getDate() - 14);
-    const minFromDateStr = minFromDate.toISOString().split('T')[0];
-
-    let effectiveFromDate = params.fromDate;
-    if (!effectiveFromDate || new Date(effectiveFromDate) < minFromDate) {
-      effectiveFromDate = minFromDateStr;
-    }
-    const effectiveToDate = params.toDate || today.toISOString().split('T')[0];
+    // Bound date range: TradeIndia enforces max 24 hours between from_date and to_date
+    const today = new Date().toISOString().split('T')[0];
+    const effectiveToDate = params.toDate || today;
+    const effectiveFromDate = params.fromDate || effectiveToDate;
 
     // Build URL query parameters
     const url = new URL(apiUrl);
@@ -311,8 +304,11 @@ export class TradeIndiaService {
       `TI_${raw.sender_mobile || raw.mobile || ''}_${raw.generated_date || raw.date || Date.now()}`
     ).trim();
 
+    const contact = raw.contact_details || {};
+
     // Contact details
     const senderName = String(
+      contact.user_name ||
       raw.sender_name ||
       raw.contact_person ||
       raw.name ||
@@ -322,6 +318,7 @@ export class TradeIndiaService {
     ).trim();
 
     const companyName = String(
+      raw.co_name ||
       raw.sender_co ||
       raw.company_name ||
       raw.company ||
@@ -332,6 +329,7 @@ export class TradeIndiaService {
     ).trim();
 
     const email = String(
+      contact.contact_email ||
       raw.sender_email ||
       raw.email ||
       raw.buyer_email ||
@@ -340,6 +338,8 @@ export class TradeIndiaService {
     ).trim();
 
     const phone = String(
+      contact.contact_number ||
+      contact.phone_no ||
       raw.sender_mobile ||
       raw.mobile ||
       raw.phone ||
@@ -347,10 +347,11 @@ export class TradeIndiaService {
       raw.contact_number ||
       raw.SENDER_MOBILE ||
       ''
-    ).trim();
+    ).replace(/^[-\s]+/, '').trim();
 
     // Geographical location
     const city = String(
+      contact.city ||
       raw.sender_city ||
       raw.city ||
       raw.SENDER_CITY ||
@@ -358,6 +359,7 @@ export class TradeIndiaService {
     ).trim();
 
     const state = String(
+      contact.state ||
       raw.sender_state ||
       raw.state ||
       raw.SENDER_STATE ||
@@ -365,10 +367,7 @@ export class TradeIndiaService {
     ).trim();
 
     const country = String(
-      raw.sender_country ||
-      raw.country ||
-      raw.SENDER_COUNTRY ||
-      'India'
+      contact.country_code === 'IN' ? 'India' : (contact.country || raw.sender_country || raw.country || raw.SENDER_COUNTRY || 'India')
     ).trim();
 
     // Product & Requirement

@@ -11,9 +11,8 @@ export async function createBackendApp() {
   // Initialize in-memory mock/seed database
   await db.init();
 
-  // Initialize background Enterprise Integrations Scheduler & TradeIndia 5-min Lead Sync
+  // Initialize background Enterprise Integrations Scheduler (includes TradeIndia & all providers)
   IntegrationSchedulerService.start();
-  TradeIndiaScheduler.start();
 
   // Basic Middlewares
   app.use(cors({

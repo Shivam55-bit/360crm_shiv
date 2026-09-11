@@ -131,28 +131,8 @@ export class TradeIndiaAdapter implements IProviderAdapter {
 
     const today = new Date();
     const toDate = options.toDate || TradeIndiaAdapter.formatDate(today);
-    
-    // TradeIndia allows a maximum range of 14-30 days per API call
-    const maxDaysBack = 14;
-    const minFromDate = new Date(today);
-    minFromDate.setDate(minFromDate.getDate() - maxDaysBack);
-    const minFromDateStr = TradeIndiaAdapter.formatDate(minFromDate);
-
-    let fromDate = options.fromDate;
-    if (!fromDate) {
-      if (integration.lastSuccessfulSyncAt) {
-        const lastSync = new Date(integration.lastSuccessfulSyncAt);
-        if (!isNaN(lastSync.getTime())) {
-          lastSync.setDate(lastSync.getDate() - 1); // 1-day safety overlap
-          fromDate = TradeIndiaAdapter.formatDate(lastSync);
-        }
-      }
-      if (!fromDate || new Date(fromDate) < minFromDate) {
-        fromDate = minFromDateStr;
-      }
-    } else if (new Date(fromDate) < minFromDate) {
-      fromDate = minFromDateStr;
-    }
+    // TradeIndia requires from_date and to_date to be within 24 hours
+    const fromDate = options.fromDate || toDate;
 
     const limit = options.limitPerPage || Number(integration.config?.limit) || 20;
     const streams = [0]; // Normal Buy Leads
@@ -166,7 +146,7 @@ export class TradeIndiaAdapter implements IProviderAdapter {
       for (const streamCode of streams) {
         let pageNo = 1;
         let keepGoing = true;
-        const maxPages = 5; // Guard against rate-limits
+        const maxPages = 2; // Guard against rate-limits (TradeIndia allows max 5 req/5min)
 
         while (keepGoing && pageNo <= maxPages) {
           stats.pagesProcessed++;
@@ -190,7 +170,7 @@ export class TradeIndiaAdapter implements IProviderAdapter {
               'Accept': 'application/json, text/plain, */*',
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             },
-            signal: AbortSignal.timeout(15000)
+            signal: AbortSignal.timeout(45000)
           });
 
           const rawText = await response.text();
@@ -222,16 +202,17 @@ export class TradeIndiaAdapter implements IProviderAdapter {
 
           for (const raw of records) {
             try {
-              const senderName = String(raw.sender_name || raw.SENDER_NAME || raw.contact_person || raw.name || raw.buyer_name || '').trim();
-              const phone = String(raw.sender_mobile || raw.SENDER_MOBILE || raw.mobile || raw.phone || raw.contact_number || '').trim();
-              const email = String(raw.sender_email || raw.SENDER_EMAIL || raw.email || raw.buyer_email || '').trim();
-              const companyName = String(raw.sender_co || raw.SENDER_CO || raw.company_name || raw.company || raw.sender_company || '').trim();
+              const contact = raw.contact_details || {};
+              const senderName = String(contact.user_name || raw.sender_name || raw.SENDER_NAME || raw.contact_person || raw.name || raw.buyer_name || '').trim();
+              const phone = String(contact.contact_number || contact.phone_no || raw.sender_mobile || raw.SENDER_MOBILE || raw.mobile || raw.phone || raw.contact_number || '').replace(/^[-\s]+/, '').trim();
+              const email = String(contact.contact_email || raw.sender_email || raw.SENDER_EMAIL || raw.email || raw.buyer_email || '').trim();
+              const companyName = String(raw.co_name || raw.sender_co || raw.SENDER_CO || raw.company_name || raw.company || raw.sender_company || '').trim();
               const productName = String(raw.product_name || raw.PRODUCT_NAME || raw.subject || raw.item_name || raw.product || '').trim();
-              const queryMessage = String(raw.query_message || raw.QUERY_MESSAGE || raw.message || raw.requirement || '').trim();
-              const city = String(raw.sender_city || raw.SENDER_CITY || raw.city || '').trim();
-              const state = String(raw.sender_state || raw.SENDER_STATE || raw.state || '').trim();
-              const country = String(raw.sender_country || raw.SENDER_COUNTRY || raw.country || 'India').trim();
-              const quantity = String(raw.quantity || raw.QUANTITY || raw.order_value || '').trim();
+              const queryMessage = String(raw.description || raw.query_message || raw.QUERY_MESSAGE || raw.message || raw.requirement || '').trim();
+              const city = String(contact.city || raw.sender_city || raw.SENDER_CITY || raw.city || '').trim();
+              const state = String(contact.state || raw.sender_state || raw.SENDER_STATE || raw.state || '').trim();
+              const country = String(contact.country_code === 'IN' ? 'India' : (contact.country || raw.sender_country || raw.SENDER_COUNTRY || raw.country || 'India')).trim();
+              const quantity = String(raw.specification || raw.quantity || raw.QUANTITY || raw.order_value || '').trim();
 
               // Skip completely empty items
               if (!senderName && !phone && !email && !productName && !companyName) {

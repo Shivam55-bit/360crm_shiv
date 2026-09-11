@@ -76,33 +76,9 @@ export class TradeIndiaSyncService {
   public static calculateDateRange(customFromDate?: string, customToDate?: string): { fromDate: string; toDate: string } {
     const today = new Date();
     const toDate = customToDate || this.formatDate(today);
-
-    if (customFromDate) {
-      return { fromDate: customFromDate, toDate };
-    }
-
-    const integration = this.getIntegrationRecord();
-    const initialDaysBack = Number(integration.config?.initialSyncDaysBack) || 7;
-
-    if (integration.lastSuccessfulSyncAt) {
-      const lastSync = new Date(integration.lastSuccessfulSyncAt);
-      if (!isNaN(lastSync.getTime())) {
-        // Subtract 1 day for safe overlap window
-        lastSync.setDate(lastSync.getDate() - 1);
-        return {
-          fromDate: this.formatDate(lastSync),
-          toDate
-        };
-      }
-    }
-
-    // Default for first synchronization
-    const defaultStart = new Date(today);
-    defaultStart.setDate(defaultStart.getDate() - initialDaysBack);
-    return {
-      fromDate: this.formatDate(defaultStart),
-      toDate
-    };
+    // TradeIndia API enforces: "greather than 24 hours not allowed for inquiries"
+    const fromDate = customFromDate || toDate;
+    return { fromDate, toDate };
   }
 
   /**
@@ -277,7 +253,7 @@ export class TradeIndiaSyncService {
   }) {
     let pageNo = 1;
     let keepGoing = true;
-    const maxPages = 50; // Safety guard to avoid runaway loops
+    const maxPages = 3; // Safety guard to avoid TradeIndia 5-request rate limit
 
     while (keepGoing && pageNo <= maxPages) {
       params.stats.pagesProcessed++;

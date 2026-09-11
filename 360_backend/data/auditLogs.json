@@ -802,5 +802,59 @@
     "timestamp": "2026-09-02T07:22:53.114Z",
     "createdAt": "2026-09-02T07:22:53.114Z",
     "_id": "aud_1788333773114_1dwwe"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-11T08:36:21.859Z",
+    "createdAt": "2026-09-11T08:36:21.859Z",
+    "_id": "aud_1789115781859_vrqqx"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-11T08:37:01.759Z",
+    "createdAt": "2026-09-11T08:37:01.759Z",
+    "_id": "aud_1789115821759_8hf62"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "MANUAL_SYNC",
+    "module": "integrations",
+    "description": "TradeIndia Lead Sync Connector",
+    "recordId": "int_1",
+    "newData": {
+      "success": false,
+      "message": "TradeIndia sync error: Rate limit exceed. Try After 15 minutes : A maximum of 5 requests is allowed every 5 minutes.",
+      "stats": {
+        "fetched": 0,
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "failed": 0,
+        "durationMs": 294,
+        "pagesProcessed": 1
+      },
+      "error": "Rate limit exceed. Try After 15 minutes : A maximum of 5 requests is allowed every 5 minutes."
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-11T08:37:13.427Z",
+    "createdAt": "2026-09-11T08:37:13.427Z",
+    "_id": "aud_1789115833427_ma772"
   }
 ]
