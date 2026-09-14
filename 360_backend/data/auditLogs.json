@@ -2449,5 +2449,135 @@
     "timestamp": "2026-09-14T10:38:58.083Z",
     "createdAt": "2026-09-14T10:38:58.083Z",
     "_id": "aud_1789382338083_en9p9"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:40:40.390Z",
+    "createdAt": "2026-09-14T10:40:40.390Z",
+    "_id": "aud_1789382440390_qfenz"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789384480519_ew3iz",
+    "newData": {
+      "title": "Follow-up with Verification Buyer 7459",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:14:40.575Z",
+    "createdAt": "2026-09-14T11:14:40.575Z",
+    "_id": "aud_1789384480575_xzvsh"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789384488701_8yylb",
+    "newData": {
+      "title": "Follow-up with Verification Buyer 7459",
+      "type": "Task"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:14:48.701Z",
+    "createdAt": "2026-09-14T11:14:48.701Z",
+    "_id": "aud_1789384488701_u6zwe"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "attendance",
+    "description": "Attendance ClockOut",
+    "recordId": "att_1789382207042_ho418",
+    "newData": {
+      "employeeName": "Arjun Singh",
+      "checkOut": "04:46:52 pm",
+      "workHours": 0.63,
+      "totalActiveMinutes": 38,
+      "totalBreakMinutes": 2
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:16:52.206Z",
+    "createdAt": "2026-09-14T11:16:52.206Z",
+    "_id": "aud_1789384612206_lgtu2"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789385084419_s6yws",
+    "newData": {
+      "title": "Follow-up with Verification Buyer 7459",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:24:44.516Z",
+    "createdAt": "2026-09-14T11:24:44.516Z",
+    "_id": "aud_1789385084516_gfdli"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fup_emp_2",
+    "oldData": {
+      "_id": "fup_emp_2",
+      "leadId": "lead_emp_2",
+      "type": "WhatsApp",
+      "title": "Share updated GST tax invoice & material test certificates",
+      "description": "Send Sunita Sharma MTC batch certs for SS-316 ball valves via WhatsApp",
+      "scheduledAt": "2026-02-17T15:00:00.000Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-02-16T10:30:00.000Z",
+      "updatedAt": "2026-02-16T10:30:00.000Z"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:25:16.188Z",
+    "createdAt": "2026-09-14T11:25:16.188Z",
+    "_id": "aud_1789385116188_4inp9"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T11:26:23.127Z",
+    "createdAt": "2026-09-14T11:26:23.127Z",
+    "_id": "aud_1789385183127_9121v"
   }
 ]

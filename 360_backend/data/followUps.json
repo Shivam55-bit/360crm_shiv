@@ -42,10 +42,12 @@
     "title": "Share updated GST tax invoice & material test certificates",
     "description": "Send Sunita Sharma MTC batch certs for SS-316 ball valves via WhatsApp",
     "scheduledAt": "2026-02-17T15:00:00.000Z",
-    "status": "PENDING",
+    "status": "COMPLETED",
     "assignedTo": "Arjun Singh",
     "createdAt": "2026-02-16T10:30:00.000Z",
-    "updatedAt": "2026-02-16T10:30:00.000Z"
+    "updatedAt": "2026-09-14T11:25:16.188Z",
+    "completedAt": "2026-09-14T11:25:16.187Z",
+    "outcomeNotes": "Marked completed by employee"
   },
   {
     "_id": "fup_emp_3",
@@ -148,5 +150,54 @@
     "_id": "fol_1789382338008_e7h77",
     "completedAt": "2026-09-14T10:38:58.013Z",
     "outcomeNotes": "Pricing agreed with client"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadId": "lea_1789382337976_siihx",
+    "leadName": "",
+    "customerName": "",
+    "type": "Call",
+    "priority": "MEDIUM",
+    "title": "Follow-up with Verification Buyer 7459",
+    "description": "",
+    "scheduledAt": "2026-09-18T10:00:00.000Z",
+    "status": "PENDING",
+    "assignedTo": "Arjun Singh",
+    "createdAt": "2026-09-14T11:14:40.519Z",
+    "updatedAt": "2026-09-14T11:14:40.519Z",
+    "_id": "fol_1789384480519_ew3iz"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadId": "lea_1789382337976_siihx",
+    "leadName": "",
+    "customerName": "",
+    "type": "Task",
+    "priority": "MEDIUM",
+    "title": "Follow-up with Verification Buyer 7459",
+    "description": "",
+    "scheduledAt": "2026-09-24T10:00:00.000Z",
+    "status": "PENDING",
+    "assignedTo": "Arjun Singh",
+    "createdAt": "2026-09-14T11:14:48.701Z",
+    "updatedAt": "2026-09-14T11:14:48.701Z",
+    "_id": "fol_1789384488701_8yylb"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadId": "lea_1789382337976_siihx",
+    "leadName": "",
+    "customerName": "",
+    "type": "Call",
+    "priority": "MEDIUM",
+    "title": "Follow-up with Verification Buyer 7459",
+    "description": "isjfbiadsjbfsadkjfadskfnasdnj",
+    "scheduledAt": "2026-09-15T10:00:00.000Z",
+    "status": "PENDING",
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "usr_employee_arjun",
+    "createdAt": "2026-09-14T11:24:44.419Z",
+    "updatedAt": "2026-09-14T11:24:44.419Z",
+    "_id": "fol_1789385084419_s6yws"
   }
 ]

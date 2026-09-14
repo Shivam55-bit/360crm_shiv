@@ -91,11 +91,11 @@
     "totalFieldMinutes": 1,
     "totalOfficeMinutes": 0,
     "totalStopMinutes": 0,
-    "totalDistanceKm": 1660,
+    "totalDistanceKm": 1660.3,
     "geofenceVisitsCount": 0,
-    "stopsCount": 4,
+    "stopsCount": 23,
     "firstLocationTime": "03:49 PM",
-    "lastLocationTime": "04:08 PM",
-    "updatedAt": "2026-09-14T10:38:26.507Z"
+    "lastLocationTime": "04:32 PM",
+    "updatedAt": "2026-09-14T11:02:26.627Z"
   }
 ]

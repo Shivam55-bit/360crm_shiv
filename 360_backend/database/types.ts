@@ -135,6 +135,7 @@ export interface FollowUpDoc {
   completedAt?: string;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   assignedTo: string;
+  assignedToId?: string;
   outcomeNotes?: string;
   createdAt: string;
   updatedAt: string;

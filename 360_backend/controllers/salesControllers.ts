@@ -1499,6 +1499,7 @@ export async function logLeadCall(req: AuthenticatedRequest, res: Response) {
         scheduledAt: followUpDate.includes('T') ? followUpDate : `${followUpDate}T10:00:00.000Z`,
         status: 'PENDING',
         assignedTo: lead.assignedTo || callerName,
+        assignedToId: lead.assignedToId || callerId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });

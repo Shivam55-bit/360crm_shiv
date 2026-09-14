@@ -6060,5 +6060,44 @@
     "performedBy": "Rohan Sharma (Admin)",
     "timestamp": "2026-09-14T10:38:58.083Z",
     "_id": "act_1789382338083_6xfnh"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Follow-up with Verification Buyer 7459' scheduled for 18/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T11:14:40.574Z",
+    "_id": "act_1789384480574_vsx22"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Follow-up with Verification Buyer 7459' scheduled for 24/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T11:14:48.701Z",
+    "_id": "act_1789384488701_ft34l"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Follow-up with Verification Buyer 7459' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T11:24:44.515Z",
+    "_id": "act_1789385084515_tvk8v"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lead_emp_2",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Marked completed by employee",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T11:25:16.188Z",
+    "_id": "act_1789385116188_tmxu9"
   }
 ]
