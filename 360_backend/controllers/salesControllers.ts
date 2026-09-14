@@ -261,31 +261,38 @@ export async function updateLead(req: AuthenticatedRequest, res: Response) {
 export async function getSalesReps(req: AuthenticatedRequest, res: Response) {
   try {
     const employees = db.employees.find(e => e.status === 'ACTIVE' && matchesTenant(e, req));
-    const users = db.users.find(u => u.status === 'ACTIVE' && matchesTenant(u, req));
     const allLeads = db.leads.getAll().filter(l => matchesTenant(l, req));
 
-    // Map active employees
+    // Map active sales employees (Primary source: Employees database)
     const repList = employees.map(emp => {
       const activeLeadsCount = allLeads.filter(
-        l => (l.assignedTo === emp.name || l.assignedToId === emp._id) &&
+        l => (l.assignedTo === emp.name || l.assignedToId === emp._id || (emp.userId && l.assignedToId === emp.userId)) &&
              l.status !== 'WON' && l.status !== 'LOST' && l.status !== 'CONVERTED'
       ).length;
 
       return {
         _id: emp._id,
-        employeeId: emp.employeeId,
+        employeeId: emp.employeeId || 'EMP',
         name: emp.name,
         email: emp.email,
         phone: emp.phone,
         department: emp.department || 'Sales',
-        designation: emp.designation || 'Sales Executive',
+        designation: emp.designation || 'Sales Representative',
         type: 'EMPLOYEE',
         activeLeadsCount
       };
     });
 
-    // Add administrative users who handle leads
-    users.forEach(u => {
+    // Also include any user accounts with explicit Sales Employee roles (STRICTLY excluding SUPER_ADMIN and ADMIN)
+    const salesUsers = db.users.find(u =>
+      u.status === 'ACTIVE' &&
+      matchesTenant(u, req) &&
+      u.role !== 'SUPER_ADMIN' &&
+      u.role !== 'ADMIN' &&
+      ['EMPLOYEE', 'SALES_EMPLOYEE', 'SALES_REP'].includes(u.role)
+    );
+
+    salesUsers.forEach(u => {
       if (!repList.some(r => r.name.toLowerCase() === u.name.toLowerCase() || r.email.toLowerCase() === u.email.toLowerCase())) {
         const activeLeadsCount = allLeads.filter(
           l => (l.assignedTo === u.name || l.assignedToId === u._id) &&
@@ -298,9 +305,9 @@ export async function getSalesReps(req: AuthenticatedRequest, res: Response) {
           name: u.name,
           email: u.email,
           phone: u.phone || '',
-          department: (u as any).department || 'Management',
-          designation: u.role || 'Staff',
-          type: 'USER',
+          department: 'Sales',
+          designation: 'Sales Representative',
+          type: 'EMPLOYEE',
           activeLeadsCount
         });
       }
