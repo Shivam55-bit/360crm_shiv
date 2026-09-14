@@ -61,10 +61,7 @@ Platform me har department aur employee ke liye alag-alag secure roles bane hue 
 | Department / Role | Email ID | Password | Portal Par Kya Kaam Kar Sakte Hain |
 | :--- | :--- | :--- | :--- |
 | **Director / Admin** | `admin@360crm.com` | `admin123` | Pure business ka full access, lead assigning, reports aur control |
-| **Sales Executive (Vikram)** | `vikram@360crm.com` | `admin123` | Apni assigned leads, calling desk, follow-ups aur quotation banana |
-| **Sales Executive (Priya)** | `priya@360crm.com` | `admin123` | Assigned inquiries handle karna aur customer follow-ups |
-| **Store & Inventory** | `store@360crm.com` | `admin123` | Products, live warehouse stock, inward receipts aur dispatch |
-| **Accounts & Billing** | `accounts@360crm.com` | `admin123` | Tax Invoices, payment receipts, customer ledger aur GST summary |
+| **Sales Representative (Arjun Singh)** | `employee@360crm.com` | `admin123` | Apni assigned leads, calling desk, follow-ups aur quotation banana |
 
 ---
 
@@ -128,18 +125,20 @@ Agar TradeIndia ya kisi portal se wahi buyer dobara inquiry bhejta hai:
 ### Step 2: Manager Lead Ko Executive Ko Assign Karta Hai
 1. Admin ya Sales Manager lead row me **Assign Icon (User with Checkmark)** par click karta hai.
 2. Form khulta hai:
-   - **Sales Representative**: Select karein `Vikram Mehta (Sales)`.
+   - **Sales Representative**: Select karein `Arjun Singh`.
    - **Handover Notes**: `Buyer ko urgent thermal ribbon bulk order chahiye. Aaj hi call karein.`
 3. **"Confirm Assignment"** button dabayein.
-4. Lead row me Assigned Rep **`Vikram Mehta`** ho jata hai aur system timeline me record ho jata hai ki ye lead Vikram ko di gayi.
+4. Lead row me Assigned Rep **`Arjun Singh`** ho jata hai aur system timeline me record ho jata hai ki ye lead Arjun ko di gayi.
 
 ---
 
 ### Step 3: Sales Executive Ka Kaam (Calling & Follow-up)
-1. Sales executive (Vikram) apne account se login karta hai.
-2. Uske screen par wahi lead dikhti hai.
+1. Sales executive (Arjun Singh) apne account se login karta hai:
+   - **Email**: `employee@360crm.com`
+   - **Password**: `admin123`
+2. Uske Employee Portal par assigned leads dikhti hain.
 3. Row me **Eye Icon** dabakar wo buyer ki full details dekhta hai aur buyer ko call/WhatsApp karta hai.
-4. Call ke baad Vikram status update karta hai:
+4. Call ke baad Arjun status update karta hai:
    - Status: **`QUALIFIED`** ya **`IN_DISCUSSION`**.
 5. **"+ Schedule Follow-up"** button dabakar reminder lagata hai (e.g. `Kal subah 11:00 baje - Rate Negotiation Call`).
 
