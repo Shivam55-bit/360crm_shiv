@@ -12,7 +12,27 @@ export async function getLeads(req: AuthenticatedRequest, res: Response) {
     const { status, source, priority, assignedTo, search, dateFilter, fromDate, toDate, month } = req.query;
     let allLeads = db.leads.getAll().filter(l => matchesTenant(l, req));
 
-    // 1. Overall System KPI Stats (computed across leads belonging to this tenant)
+    // Strict Role-Based Scoping: Employees ONLY receive leads assigned directly to them
+    const userRole = req.user?.role;
+    const isPrivileged = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'MANAGER';
+    if (!isPrivileged && req.user) {
+      const uName = (req.user.name || '').trim().toLowerCase();
+      const uId = req.user.userId;
+      const emp = db.employees.findOne(e => e.userId === uId || e.email.toLowerCase() === (req.user?.email || '').toLowerCase() || e.name.toLowerCase() === uName);
+      const empId = emp?._id;
+
+      allLeads = allLeads.filter(l => {
+        if (!l.assignedTo || l.assignedTo === 'Unassigned') return false;
+        const assignedName = (l.assignedTo || '').trim().toLowerCase();
+        const assignedId = l.assignedToId || '';
+        return (
+          (assignedId && (assignedId === uId || (empId && assignedId === empId))) ||
+          (uName && (assignedName === uName || assignedName.includes(uName) || uName.includes(assignedName)))
+        );
+      });
+    }
+
+    // 1. Overall System KPI Stats (computed across leads belonging to this tenant/user scope)
     const totalLeads = allLeads.length;
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];

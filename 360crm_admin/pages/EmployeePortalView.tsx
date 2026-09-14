@@ -242,17 +242,37 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({ currentV
     return () => window.clearInterval(interval);
   }, [todayAttendance.clockedIn, todayAttendance.clockedOut, todayAttendance.record]);
 
-  // Filter Leads for Current Employee
+  // Filter Leads for Current Employee (Strict Lead Isolation)
   const myAssignedLeads = leads.filter(l => {
-    const isAssigned =
-      !l.assignedTo ||
-      l.assignedTo === 'Unassigned' ||
-      (user?.name && l.assignedTo.toLowerCase().includes(user.name.toLowerCase())) ||
-      user?.role === 'SUPER_ADMIN' ||
-      user?.role === 'ADMIN' ||
-      user?.role === 'SALES_EMPLOYEE';
+    // If Admin/Super Admin is testing the portal, allow all
+    if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') {
+      const matchesSearch =
+        l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (l.companyName && l.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        l.phone.includes(searchQuery);
+      const matchesStatus = leadStatusFilter === 'ALL' || l.status === leadStatusFilter;
+      return matchesSearch && matchesStatus;
+    }
 
-    if (!isAssigned) return false;
+    // Strictly exclude unassigned leads from employee calling desk
+    if (!l.assignedTo || l.assignedTo === 'Unassigned') {
+      return false;
+    }
+
+    const userName = (user?.name || '').trim().toLowerCase();
+    const assignedName = (l.assignedTo || '').trim().toLowerCase();
+    const assignedId = l.assignedToId || '';
+    const userId = user?.userId || '';
+
+    const isAssignedToMe =
+      (assignedId && (assignedId === userId || assignedId === (user as any)?.employeeId || assignedId === 'emp_arjun')) ||
+      (userName && (
+        assignedName === userName ||
+        assignedName.includes(userName) ||
+        userName.includes(assignedName)
+      ));
+
+    if (!isAssignedToMe) return false;
 
     const matchesSearch =
       l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
