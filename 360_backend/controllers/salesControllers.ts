@@ -1216,6 +1216,24 @@ export async function getFollowUps(req: AuthenticatedRequest, res: Response) {
     const { status, type, priority, leadId, customerId } = req.query;
     let followUps = db.followUps.getAll().filter(f => matchesTenant(f, req));
 
+    // Role-based scoping: Employees only see their own assigned follow-ups
+    const userRole = req.user?.role;
+    const isManagerOrAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'MANAGER';
+    if (!isManagerOrAdmin && req.user) {
+      const uName = (req.user.name || '').trim().toLowerCase();
+      const uId = req.user.userId;
+      const emp = db.employees.findOne(e => e.userId === uId || e.email.toLowerCase() === (req.user?.email || '').toLowerCase() || e.name.toLowerCase() === uName);
+      const empId = emp?._id;
+
+      followUps = followUps.filter(f => {
+        const assigned = (f.assignedTo || '').trim().toLowerCase();
+        return (
+          (f.assignedToId && (f.assignedToId === uId || (empId && f.assignedToId === empId))) ||
+          (uName && (assigned === uName || assigned.includes(uName) || uName.includes(assigned)))
+        );
+      });
+    }
+
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
@@ -1257,6 +1275,7 @@ export async function createFollowUp(req: AuthenticatedRequest, res: Response) {
     }
 
     const adminId = getTenantAdminId(req);
+    const empId = (req.user as any)?.employeeId || req.user?.userId || '';
 
     const newFup = db.followUps.insertOne({
       adminId,
@@ -1271,6 +1290,7 @@ export async function createFollowUp(req: AuthenticatedRequest, res: Response) {
       scheduledAt: scheduledAt || new Date().toISOString(),
       status: 'PENDING',
       assignedTo: assignedTo || req.user?.name || 'Sales Representative',
+      assignedToId: empId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
