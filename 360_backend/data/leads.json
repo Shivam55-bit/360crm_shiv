@@ -78,7 +78,7 @@
     "email": "v.solanki@solankichem.com",
     "phone": "+91 98240 77112",
     "source": "IndiaMART",
-    "status": "CONTACTED",
+    "status": "QUALIFIED",
     "assignedTo": "Arjun Singh",
     "estimatedValue": 280000,
     "notes": "Requires 30 units of SS-316 valves and 100m high-pressure steam pipes. Call completed, requested datasheet.",
@@ -87,7 +87,7 @@
       "High Priority"
     ],
     "createdAt": "2026-02-10T10:00:00.000Z",
-    "updatedAt": "2026-02-15T11:30:00.000Z"
+    "updatedAt": "2026-09-14T10:35:13.531Z"
   },
   {
     "_id": "lead_emp_2",
@@ -47890,9 +47890,9 @@
     "phone": "+919825167890",
     "source": "TradeIndia",
     "channel": "B2B Portal",
-    "status": "NEW",
+    "status": "QUALIFIED",
     "priority": "HIGH",
-    "stage": "LEAD_CAPTURED",
+    "stage": "REQUIREMENT_GATHERED",
     "leadScore": 95,
     "estimatedValue": 50000,
     "probability": 30,
@@ -47929,8 +47929,10 @@
       "Daily Inbound"
     ],
     "createdAt": "2026-09-14T09:53:35.463Z",
-    "updatedAt": "2026-09-14T09:59:25.765Z",
-    "_id": "lea_1789379615496_gneaq"
+    "updatedAt": "2026-09-14T10:34:19.172Z",
+    "_id": "lea_1789379615496_gneaq",
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun"
   },
   {
     "leadCode": "LD-2026-0620",
@@ -47979,7 +47981,127 @@
       "Daily Inbound"
     ],
     "createdAt": "2026-09-14T09:53:35.463Z",
-    "updatedAt": "2026-09-14T09:59:25.766Z",
+    "updatedAt": "2026-09-14T10:34:19.183Z",
     "_id": "lea_1789379615498_wrl5i"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadCode": "LD-2026-0621",
+    "name": "Verification Buyer Alpha",
+    "companyName": "Alpha Tech Systems",
+    "email": "alpha@techsystems.in",
+    "phone": "+91 9988776655",
+    "source": "TradeIndia",
+    "status": "QUALIFIED",
+    "priority": "MEDIUM",
+    "leadScore": 85,
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "estimatedValue": 125000,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "notes": "Automated test suite verification lead",
+    "tags": [
+      "New Lead"
+    ],
+    "createdAt": "2026-09-14T10:34:38.455Z",
+    "updatedAt": "2026-09-14T10:34:38.566Z",
+    "_id": "lea_1789382078456_fbldj"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadCode": "LD-2026-0622",
+    "name": "Verification Buyer Alpha",
+    "companyName": "Alpha Tech Systems",
+    "email": "alpha@techsystems.in",
+    "phone": "+91 9988776655",
+    "source": "TradeIndia",
+    "status": "QUALIFIED",
+    "priority": "MEDIUM",
+    "leadScore": 85,
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "estimatedValue": 125000,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "notes": "Automated test suite verification lead",
+    "tags": [
+      "New Lead"
+    ],
+    "createdAt": "2026-09-14T10:36:46.940Z",
+    "updatedAt": "2026-09-14T10:36:46.969Z",
+    "_id": "lea_1789382206940_xcpt9"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadCode": "LD-2026-0623",
+    "name": "Verification Buyer 9040",
+    "companyName": "Alpha Tech Systems 9040",
+    "email": "alpha9040@techsystems.in",
+    "phone": "+91 98877904012",
+    "source": "TradeIndia",
+    "status": "QUALIFIED",
+    "priority": "MEDIUM",
+    "leadScore": 85,
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "estimatedValue": 125000,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "notes": "Automated test suite verification lead",
+    "tags": [
+      "New Lead"
+    ],
+    "createdAt": "2026-09-14T10:37:39.640Z",
+    "updatedAt": "2026-09-14T10:37:39.658Z",
+    "_id": "lea_1789382259641_4smto"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadCode": "LD-2026-0624",
+    "name": "Verification Buyer 9704",
+    "companyName": "Alpha Tech Systems 9704",
+    "email": "alpha9704@techsystems.in",
+    "phone": "+91 98877970412",
+    "source": "TradeIndia",
+    "status": "QUALIFIED",
+    "priority": "MEDIUM",
+    "leadScore": 85,
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "estimatedValue": 125000,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "notes": "Automated test suite verification lead",
+    "tags": [
+      "New Lead"
+    ],
+    "createdAt": "2026-09-14T10:38:20.357Z",
+    "updatedAt": "2026-09-14T10:38:20.384Z",
+    "_id": "lea_1789382300357_oeirh"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "leadCode": "LD-2026-0625",
+    "name": "Verification Buyer 7459",
+    "companyName": "Alpha Tech Systems 7459",
+    "email": "alpha7459@techsystems.in",
+    "phone": "+91 98877745912",
+    "source": "TradeIndia",
+    "status": "QUALIFIED",
+    "priority": "MEDIUM",
+    "leadScore": 85,
+    "assignedTo": "Arjun Singh",
+    "assignedToId": "emp_arjun",
+    "estimatedValue": 125000,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "notes": "Automated test suite verification lead",
+    "tags": [
+      "New Lead"
+    ],
+    "createdAt": "2026-09-14T10:38:57.976Z",
+    "updatedAt": "2026-09-14T10:38:57.995Z",
+    "_id": "lea_1789382337976_siihx"
   }
 ]

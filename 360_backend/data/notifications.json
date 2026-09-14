@@ -52,5 +52,59 @@
     "isRead": false,
     "createdAt": "2026-09-02T05:22:35.647Z",
     "_id": "not_1788326555647_g6wj7"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Rameshwar Patel' (Shree Vallabh Chemical Industries) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:17:37.505Z",
+    "_id": "not_1789381057505_xl7gs"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Verification Buyer Alpha' (Alpha Tech Systems) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:34:38.509Z",
+    "_id": "not_1789382078509_79x1n"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Verification Buyer Alpha' (Alpha Tech Systems) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:36:46.947Z",
+    "_id": "not_1789382206947_ozdme"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Verification Buyer 9040' (Alpha Tech Systems 9040) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:37:39.645Z",
+    "_id": "not_1789382259645_v79hf"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Verification Buyer 9704' (Alpha Tech Systems 9704) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:38:20.365Z",
+    "_id": "not_1789382300365_1w8gq"
+  },
+  {
+    "recipientId": "emp_arjun",
+    "title": "New Lead Assignment",
+    "message": "Lead 'Verification Buyer 7459' (Alpha Tech Systems 7459) has been assigned to you.",
+    "type": "LEAD_ASSIGNED",
+    "isRead": false,
+    "createdAt": "2026-09-14T10:38:57.980Z",
+    "_id": "not_1789382337980_z4o3g"
   }
 ]

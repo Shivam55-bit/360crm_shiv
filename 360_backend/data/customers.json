@@ -82,5 +82,153 @@
     "createdAt": "2026-08-29T12:05:49.076Z",
     "updatedAt": "2026-08-29T12:05:49.077Z",
     "_id": "cus_1788005149077_ztnhb"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "customerCode": "CUST-2026-0005",
+    "name": "Alpha Tech Systems Pvt Ltd",
+    "companyName": "Alpha Tech Systems Pvt Ltd",
+    "email": "contact@alphatech.in",
+    "phone": "+91 9988776655",
+    "gstNumber": "07AAAAA0000A1Z5",
+    "creditLimit": 500000,
+    "paymentTerms": "Net 30",
+    "address": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "billingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "shippingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "assignedTo": "Arjun Singh",
+    "totalOrdersCount": 1,
+    "totalSpent": 0,
+    "outstandingBalance": 0,
+    "status": "ACTIVE",
+    "createdAt": "2026-09-14T10:34:38.731Z",
+    "updatedAt": "2026-09-14T10:35:13.575Z",
+    "_id": "cus_1789382078731_3gfb2"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "customerCode": "CUST-2026-0006",
+    "name": "Alpha Tech Systems 9040 Pvt Ltd",
+    "companyName": "Alpha Tech Systems 9040 Pvt Ltd",
+    "email": "contact9040@alphatech.in",
+    "phone": "+91 98877904012",
+    "gstNumber": "07AAAAA0000A1Z5",
+    "creditLimit": 500000,
+    "paymentTerms": "Net 30",
+    "address": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "billingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "shippingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "assignedTo": "Arjun Singh",
+    "totalOrdersCount": 0,
+    "totalSpent": 0,
+    "outstandingBalance": 0,
+    "status": "ACTIVE",
+    "createdAt": "2026-09-14T10:37:39.694Z",
+    "updatedAt": "2026-09-14T10:37:39.694Z",
+    "_id": "cus_1789382259694_o8rsu"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "customerCode": "CUST-2026-0007",
+    "name": "Alpha Tech Systems 9704 Pvt Ltd",
+    "companyName": "Alpha Tech Systems 9704 Pvt Ltd",
+    "email": "contact9704@alphatech.in",
+    "phone": "+91 98877970412",
+    "gstNumber": "07AAAAA0000A1Z5",
+    "creditLimit": 500000,
+    "paymentTerms": "Net 30",
+    "address": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "billingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "shippingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "assignedTo": "Arjun Singh",
+    "totalOrdersCount": 0,
+    "totalSpent": 0,
+    "outstandingBalance": 0,
+    "status": "ACTIVE",
+    "createdAt": "2026-09-14T10:38:20.433Z",
+    "updatedAt": "2026-09-14T10:38:20.433Z",
+    "_id": "cus_1789382300433_o6glo"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "customerCode": "CUST-2026-0008",
+    "name": "Alpha Tech Systems 7459 Pvt Ltd",
+    "companyName": "Alpha Tech Systems 7459 Pvt Ltd",
+    "email": "contact7459@alphatech.in",
+    "phone": "+91 98877745912",
+    "gstNumber": "07AAAAA0000A1Z5",
+    "creditLimit": 500000,
+    "paymentTerms": "Net 30",
+    "address": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "billingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "shippingAddress": {
+      "street": "Phase 2 Industrial Area",
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "assignedTo": "Arjun Singh",
+    "totalOrdersCount": 1,
+    "totalSpent": 26550,
+    "outstandingBalance": 26550,
+    "status": "ACTIVE",
+    "createdAt": "2026-09-14T10:38:58.031Z",
+    "updatedAt": "2026-09-14T10:38:58.083Z",
+    "_id": "cus_1789382338031_fo9hy"
   }
 ]

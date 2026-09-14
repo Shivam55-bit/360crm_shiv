@@ -28,5 +28,50 @@
     "lastHeartbeatAt": "2026-08-29T11:14:00.450Z",
     "createdAt": "2026-01-15T09:00:00.000Z",
     "updatedAt": "2026-08-29T11:14:00.450Z"
+  },
+  {
+    "employeeId": "usr_employee_arjun",
+    "employeeName": "Arjun Singh",
+    "deviceId": "dev_arjun_workstation_01",
+    "deviceName": "Arjun Workstation",
+    "os": "Windows",
+    "platform": "win32",
+    "agentVersion": "1.0.0",
+    "status": "ONLINE",
+    "lastSeenAt": "2026-09-14T10:37:12.002Z",
+    "lastHeartbeatAt": "2026-09-14T10:37:12.002Z",
+    "createdAt": "2026-09-14T10:37:12.002Z",
+    "updatedAt": "2026-09-14T10:37:12.002Z",
+    "_id": "dev_1789382232002_w2tj7"
+  },
+  {
+    "employeeId": "usr_employee_arjun",
+    "employeeName": "Arjun Singh",
+    "deviceId": "dev_123",
+    "deviceName": "Laptop",
+    "os": "Windows",
+    "platform": "win32",
+    "agentVersion": "1.0.0",
+    "status": "ONLINE",
+    "lastSeenAt": "2026-09-14T10:37:51.443Z",
+    "lastHeartbeatAt": "2026-09-14T10:37:51.443Z",
+    "createdAt": "2026-09-14T10:37:51.443Z",
+    "updatedAt": "2026-09-14T10:37:51.443Z",
+    "_id": "dev_1789382271443_t9z2s"
+  },
+  {
+    "employeeId": "usr_employee_arjun",
+    "employeeName": "Arjun Singh",
+    "deviceId": "dev_arjun_7459",
+    "deviceName": "Arjun Dell Workstation",
+    "os": "Windows",
+    "platform": "win32",
+    "agentVersion": "1.0.0",
+    "status": "ONLINE",
+    "lastSeenAt": "2026-09-14T10:38:58.089Z",
+    "lastHeartbeatAt": "2026-09-14T10:38:58.089Z",
+    "createdAt": "2026-09-14T10:38:58.089Z",
+    "updatedAt": "2026-09-14T10:38:58.089Z",
+    "_id": "dev_1789382338089_torcq"
   }
 ]

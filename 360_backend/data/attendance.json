@@ -129,5 +129,51 @@
     "totalActiveMinutes": 0,
     "totalIdleMinutes": 0,
     "activeRatio": 100
+  },
+  {
+    "adminId": "usr_admin_main",
+    "employeeId": "usr_employee_arjun",
+    "employeeName": "Arjun Singh",
+    "date": "2026-09-14",
+    "checkIn": "04:06:47 pm",
+    "checkOut": "",
+    "status": "PRESENT",
+    "remarks": "",
+    "selfieCheckIn": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=",
+    "locationCheckIn": {
+      "lat": 28.6139,
+      "lng": 77.209,
+      "address": "Industrial Area Phase 2, New Delhi",
+      "matchedLocationName": "Noida Corporate Office",
+      "officeLocationId": "loc_noida_hq",
+      "verifiedDistance": 0
+    },
+    "clockInVerification": {
+      "selfieRequired": true,
+      "selfieVerified": true,
+      "selfieUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=",
+      "locationRequired": true,
+      "locationVerified": true,
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "officeLocationId": "loc_noida_hq",
+      "officeLocationName": "Noida Corporate Office",
+      "distanceFromOffice": 0,
+      "verifiedAt": "2026-09-14T10:36:47.041Z"
+    },
+    "breaks": [
+      {
+        "_id": "brk_1789382231960",
+        "start": "04:07:11 pm",
+        "reason": "Shift Break",
+        "end": "04:08:58 pm",
+        "durationMinutes": 2
+      }
+    ],
+    "workHours": 0,
+    "createdAt": "2026-09-14T10:36:47.041Z",
+    "_id": "att_1789382207042_ho418",
+    "updatedAt": "2026-09-14T10:38:58.026Z",
+    "totalBreakMinutes": 2
   }
 ]

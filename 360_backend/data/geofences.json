@@ -122,12 +122,12 @@
     "employeeId": "usr_admin_main",
     "validFrom": "2026-09-02T05:22:12.388Z",
     "validUntil": "2026-09-02T17:22:12.388Z",
-    "isExpired": false,
+    "isExpired": true,
     "alertOnEntry": true,
     "alertOnExit": true,
-    "enabled": true,
+    "enabled": false,
     "createdAt": "2026-09-02T05:22:12.388Z",
-    "updatedAt": "2026-09-02T05:22:12.388Z",
+    "updatedAt": "2026-09-14T10:19:24.964Z",
     "_id": "geo_1788326532388_x108w"
   },
   {

@@ -26,8 +26,8 @@
     "status": "ACTIVE",
     "avatar": "RS",
     "createdAt": "2026-01-05T00:00:00.000Z",
-    "updatedAt": "2026-09-14T09:57:56.654Z",
-    "lastLogin": "2026-09-14T09:57:56.654Z"
+    "updatedAt": "2026-09-14T10:38:57.676Z",
+    "lastLogin": "2026-09-14T10:38:57.676Z"
   },
   {
     "_id": "usr_employee_arjun",
@@ -68,8 +68,8 @@
     "status": "ACTIVE",
     "avatar": "AS",
     "createdAt": "2026-01-20T00:00:00.000Z",
-    "updatedAt": "2026-09-02T05:22:35.402Z",
-    "lastLogin": "2026-09-02T05:22:35.402Z"
+    "updatedAt": "2026-09-14T10:38:57.821Z",
+    "lastLogin": "2026-09-14T10:38:57.821Z"
   },
   {
     "name": "Acme Admin",

@@ -953,5 +953,1501 @@
     "timestamp": "2026-09-14T09:57:56.673Z",
     "createdAt": "2026-09-14T09:57:56.673Z",
     "_id": "aud_1789379876673_hziq6"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "MANUAL_SYNC",
+    "module": "integrations",
+    "description": "TradeIndia Lead Sync Connector",
+    "recordId": "int_1",
+    "newData": {
+      "success": true,
+      "message": "TradeIndia synchronization complete: 0 new lead(s) created, 2 updated for 2026-09-14.",
+      "stats": {
+        "fetched": 2,
+        "created": 0,
+        "updated": 2,
+        "skipped": 0,
+        "failed": 0,
+        "durationMs": 935,
+        "pagesProcessed": 1
+      }
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T10:16:53.319Z",
+    "createdAt": "2026-09-14T10:16:53.319Z",
+    "_id": "aud_1789381013319_6xpfh"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:17:37.211Z",
+    "createdAt": "2026-09-14T10:17:37.211Z",
+    "_id": "aud_1789381057211_xhx4g"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789379615496_gneaq",
+    "oldData": {
+      "assignedTo": "Unassigned"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Urgent requirement for thermal ribbons. Please call buyer immediately."
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:17:37.505Z",
+    "createdAt": "2026-09-14T10:17:37.505Z",
+    "_id": "aud_1789381057505_ezu0u"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:17:37.779Z",
+    "createdAt": "2026-09-14T10:17:37.779Z",
+    "_id": "aud_1789381057779_xyyei"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789379615496_gneaq",
+    "oldData": {
+      "leadCode": "LD-2026-0619",
+      "name": "Rameshwar Patel",
+      "companyName": "Shree Vallabh Chemical Industries",
+      "email": "rameshwar.patel@vallabhchem.co.in",
+      "phone": "+919825167890",
+      "source": "TradeIndia",
+      "channel": "B2B Portal",
+      "status": "NEW",
+      "priority": "HIGH",
+      "stage": "LEAD_CAPTURED",
+      "leadScore": 95,
+      "estimatedValue": 50000,
+      "probability": 30,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "country": "India",
+      "productName": "Thermal Transfer Ribbon Resin Grade 110mm x 300m",
+      "quantity": "100 Rolls",
+      "requirement": "Thermal Transfer Ribbon Resin Grade 110mm x 300m",
+      "sourceLeadId": "TI_INQ_20260914_01",
+      "externalLeadId": "TI_INQ_20260914_01",
+      "rawSourceData": {
+        "lead_id": "TI_INQ_20260914_01",
+        "generated_date": "2026-09-14",
+        "posted_on": "14 September 2026",
+        "specification": "Thermal Transfer Ribbon Resin Grade 110mm x 300m",
+        "description": "Requirement for Chemical & Scratch Resistant Resin Ribbons 110mm x 300m for industrial barcode printing. Please share best bulk rate.",
+        "contact_details": {
+          "user_name": "Rameshwar Patel",
+          "contact_number": "+919825167890",
+          "contact_email": "rameshwar.patel@vallabhchem.co.in",
+          "city": "Ahmedabad",
+          "state": "Gujarat",
+          "country": "India"
+        },
+        "product_name": "Thermal Transfer Ribbon Resin Grade 110mm x 300m",
+        "co_name": "Shree Vallabh Chemical Industries",
+        "quantity": "100 Rolls"
+      },
+      "notes": "Inbound lead captured via TradeIndia Lead Sync Connector: Product: Thermal Transfer Ribbon Resin Grade 110mm x 300m. Qty: 100 Rolls. Location: Ahmedabad, Gujarat. Message: Requirement for Chemical & Scratch Resistant Resin Ribbons 110mm x 300m for industrial barcode printing. Please share best bulk rate.",
+      "tags": [
+        "TradeIndia",
+        "Buy Lead",
+        "Daily Inbound"
+      ],
+      "createdAt": "2026-09-14T09:53:35.463Z",
+      "updatedAt": "2026-09-14T10:17:37.504Z",
+      "_id": "lea_1789379615496_gneaq",
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun"
+    },
+    "newData": {
+      "status": "QUALIFIED",
+      "stage": "REQUIREMENT_GATHERED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:17:38.008Z",
+    "createdAt": "2026-09-14T10:17:38.008Z",
+    "_id": "aud_1789381058008_r1qu3"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "timestamp": "2026-09-14T10:19:15.695Z",
+    "createdAt": "2026-09-14T10:19:15.695Z",
+    "_id": "aud_1789381155695_7t1iw"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:29:48.919Z",
+    "createdAt": "2026-09-14T10:29:48.919Z",
+    "_id": "aud_1789381788919_9n1o4"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:29:49.133Z",
+    "createdAt": "2026-09-14T10:29:49.133Z",
+    "_id": "aud_1789381789133_l0mtn"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:30:24.106Z",
+    "createdAt": "2026-09-14T10:30:24.106Z",
+    "_id": "aud_1789381824106_b66u0"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:30:24.870Z",
+    "createdAt": "2026-09-14T10:30:24.870Z",
+    "_id": "aud_1789381824870_4ltns"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:37.849Z",
+    "createdAt": "2026-09-14T10:34:37.849Z",
+    "_id": "aud_1789382077849_44grg"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.055Z",
+    "createdAt": "2026-09-14T10:34:38.055Z",
+    "_id": "aud_1789382078055_6nvhf"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382078456_fbldj",
+    "newData": {
+      "name": "Verification Buyer Alpha",
+      "leadCode": "LD-2026-0621",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.456Z",
+    "createdAt": "2026-09-14T10:34:38.456Z",
+    "_id": "aud_1789382078456_hyiaw"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382078456_fbldj",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Assigned for testing calling flow"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.510Z",
+    "createdAt": "2026-09-14T10:34:38.510Z",
+    "_id": "aud_1789382078510_616yx"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382078456_fbldj",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadCode": "LD-2026-0621",
+      "name": "Verification Buyer Alpha",
+      "companyName": "Alpha Tech Systems",
+      "email": "alpha@techsystems.in",
+      "phone": "+91 9988776655",
+      "source": "TradeIndia",
+      "status": "NEW",
+      "priority": "MEDIUM",
+      "leadScore": 85,
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun",
+      "estimatedValue": 125000,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "notes": "Automated test suite verification lead",
+      "tags": [
+        "New Lead"
+      ],
+      "createdAt": "2026-09-14T10:34:38.455Z",
+      "updatedAt": "2026-09-14T10:34:38.503Z",
+      "_id": "lea_1789382078456_fbldj"
+    },
+    "newData": {
+      "status": "CONTACTED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.521Z",
+    "createdAt": "2026-09-14T10:34:38.521Z",
+    "_id": "aud_1789382078521_pwgag"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382078565_lat98",
+    "newData": {
+      "leadName": "Verification Buyer Alpha",
+      "outcome": "INTERESTED",
+      "duration": 95
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.566Z",
+    "createdAt": "2026-09-14T10:34:38.566Z",
+    "_id": "aud_1789382078566_ii76j"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382078602_uwz1f",
+    "newData": {
+      "title": "Discuss pricing terms",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.643Z",
+    "createdAt": "2026-09-14T10:34:38.643Z",
+    "_id": "aud_1789382078643_xf6px"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382078602_uwz1f",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadId": "lea_1789382078456_fbldj",
+      "leadName": "",
+      "customerName": "",
+      "type": "Call",
+      "priority": "MEDIUM",
+      "title": "Discuss pricing terms",
+      "description": "Follow up on bulk scanner requirement",
+      "scheduledAt": "2026-09-15T10:34:38.588Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-09-14T10:34:38.602Z",
+      "updatedAt": "2026-09-14T10:34:38.602Z",
+      "_id": "fol_1789382078602_uwz1f"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.692Z",
+    "createdAt": "2026-09-14T10:34:38.692Z",
+    "_id": "aud_1789382078692_uh812"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "customers",
+    "description": "Customer",
+    "recordId": "cus_1789382078731_3gfb2",
+    "newData": {
+      "name": "Alpha Tech Systems Pvt Ltd",
+      "companyName": "Alpha Tech Systems Pvt Ltd"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.732Z",
+    "createdAt": "2026-09-14T10:34:38.732Z",
+    "_id": "aud_1789382078732_zr95v"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382078760_p3q7l",
+    "newData": {
+      "quotationNumber": "QT-2026-0004",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:34:38.867Z",
+    "createdAt": "2026-09-14T10:34:38.867Z",
+    "_id": "aud_1789382078867_gnduh"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:35:13.343Z",
+    "createdAt": "2026-09-14T10:35:13.343Z",
+    "_id": "aud_1789382113343_wd3ss"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:35:13.500Z",
+    "createdAt": "2026-09-14T10:35:13.500Z",
+    "_id": "aud_1789382113500_k344t"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382113530_j9jzy",
+    "newData": {
+      "leadName": "Vikramaditya Solanki",
+      "outcome": "INTERESTED",
+      "duration": 60
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:35:13.531Z",
+    "createdAt": "2026-09-14T10:35:13.531Z",
+    "_id": "aud_1789382113531_9rvme"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "APPROVE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382078760_p3q7l",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:35:13.564Z",
+    "createdAt": "2026-09-14T10:35:13.564Z",
+    "_id": "aud_1789382113564_qz7xy"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CONVERT",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382078760_p3q7l",
+    "oldData": {
+      "status": "APPROVED"
+    },
+    "newData": {
+      "convertedSalesOrderId": "sal_1789382113574_p6m5x"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:35:13.576Z",
+    "createdAt": "2026-09-14T10:35:13.576Z",
+    "_id": "aud_1789382113576_72dcp"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.385Z",
+    "createdAt": "2026-09-14T10:36:46.385Z",
+    "_id": "aud_1789382206385_amnc8"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.566Z",
+    "createdAt": "2026-09-14T10:36:46.566Z",
+    "_id": "aud_1789382206566_49kzs"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382206940_xcpt9",
+    "newData": {
+      "name": "Verification Buyer Alpha",
+      "leadCode": "LD-2026-0622",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.941Z",
+    "createdAt": "2026-09-14T10:36:46.941Z",
+    "_id": "aud_1789382206941_jqeai"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382206940_xcpt9",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Assigned for testing calling flow"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.947Z",
+    "createdAt": "2026-09-14T10:36:46.947Z",
+    "_id": "aud_1789382206947_d7csi"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382206940_xcpt9",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadCode": "LD-2026-0622",
+      "name": "Verification Buyer Alpha",
+      "companyName": "Alpha Tech Systems",
+      "email": "alpha@techsystems.in",
+      "phone": "+91 9988776655",
+      "source": "TradeIndia",
+      "status": "NEW",
+      "priority": "MEDIUM",
+      "leadScore": 85,
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun",
+      "estimatedValue": 125000,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "notes": "Automated test suite verification lead",
+      "tags": [
+        "New Lead"
+      ],
+      "createdAt": "2026-09-14T10:36:46.940Z",
+      "updatedAt": "2026-09-14T10:36:46.947Z",
+      "_id": "lea_1789382206940_xcpt9"
+    },
+    "newData": {
+      "status": "CONTACTED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.952Z",
+    "createdAt": "2026-09-14T10:36:46.952Z",
+    "_id": "aud_1789382206952_rx9xn"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382206968_byhth",
+    "newData": {
+      "leadName": "Verification Buyer Alpha",
+      "outcome": "INTERESTED",
+      "duration": 95
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:46.969Z",
+    "createdAt": "2026-09-14T10:36:46.969Z",
+    "_id": "aud_1789382206969_9c9ti"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382206995_i7hwh",
+    "newData": {
+      "title": "Discuss pricing terms",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:47.002Z",
+    "createdAt": "2026-09-14T10:36:47.002Z",
+    "_id": "aud_1789382207002_oodcw"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382206995_i7hwh",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadId": "lea_1789382206940_xcpt9",
+      "leadName": "",
+      "customerName": "",
+      "type": "Call",
+      "priority": "MEDIUM",
+      "title": "Discuss pricing terms",
+      "description": "Follow up on bulk scanner requirement",
+      "scheduledAt": "2026-09-15T10:36:46.979Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-09-14T10:36:46.995Z",
+      "updatedAt": "2026-09-14T10:36:46.995Z",
+      "_id": "fol_1789382206995_i7hwh"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:47.011Z",
+    "createdAt": "2026-09-14T10:36:47.011Z",
+    "_id": "aud_1789382207011_cpsh4"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "attendance",
+    "description": "Employee Clock In Verified",
+    "recordId": "att_1789382207042_ho418",
+    "newData": {
+      "employeeName": "Arjun Singh",
+      "checkIn": "04:06:47 pm",
+      "location": "Noida Corporate Office"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:36:47.042Z",
+    "createdAt": "2026-09-14T10:36:47.042Z",
+    "_id": "aud_1789382207042_ovh0n"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:11.785Z",
+    "createdAt": "2026-09-14T10:37:11.785Z",
+    "_id": "aud_1789382231786_q8ulv"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:11.942Z",
+    "createdAt": "2026-09-14T10:37:11.942Z",
+    "_id": "aud_1789382231942_1zoeg"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382231977_nwvqe",
+    "newData": {
+      "quotationNumber": "QT-2026-0005",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:11.992Z",
+    "createdAt": "2026-09-14T10:37:11.992Z",
+    "_id": "aud_1789382231992_c4bjx"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.340Z",
+    "createdAt": "2026-09-14T10:37:39.340Z",
+    "_id": "aud_1789382259340_ybqn0"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.482Z",
+    "createdAt": "2026-09-14T10:37:39.482Z",
+    "_id": "aud_1789382259482_35evb"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382259641_4smto",
+    "newData": {
+      "name": "Verification Buyer 9040",
+      "leadCode": "LD-2026-0623",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.641Z",
+    "createdAt": "2026-09-14T10:37:39.641Z",
+    "_id": "aud_1789382259641_dfedx"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382259641_4smto",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Assigned for testing calling flow"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.645Z",
+    "createdAt": "2026-09-14T10:37:39.645Z",
+    "_id": "aud_1789382259645_6ifx9"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382259641_4smto",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadCode": "LD-2026-0623",
+      "name": "Verification Buyer 9040",
+      "companyName": "Alpha Tech Systems 9040",
+      "email": "alpha9040@techsystems.in",
+      "phone": "+91 98877904012",
+      "source": "TradeIndia",
+      "status": "NEW",
+      "priority": "MEDIUM",
+      "leadScore": 85,
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun",
+      "estimatedValue": 125000,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "notes": "Automated test suite verification lead",
+      "tags": [
+        "New Lead"
+      ],
+      "createdAt": "2026-09-14T10:37:39.640Z",
+      "updatedAt": "2026-09-14T10:37:39.645Z",
+      "_id": "lea_1789382259641_4smto"
+    },
+    "newData": {
+      "status": "CONTACTED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.650Z",
+    "createdAt": "2026-09-14T10:37:39.650Z",
+    "_id": "aud_1789382259650_9dwbk"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382259658_xbml4",
+    "newData": {
+      "leadName": "Verification Buyer 9040",
+      "outcome": "INTERESTED",
+      "duration": 95
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.658Z",
+    "createdAt": "2026-09-14T10:37:39.658Z",
+    "_id": "aud_1789382259658_pp6z0"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382259672_eplld",
+    "newData": {
+      "title": "Discuss pricing terms",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.673Z",
+    "createdAt": "2026-09-14T10:37:39.673Z",
+    "_id": "aud_1789382259673_cy0h9"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382259672_eplld",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadId": "lea_1789382259641_4smto",
+      "leadName": "",
+      "customerName": "",
+      "type": "Call",
+      "priority": "MEDIUM",
+      "title": "Discuss pricing terms",
+      "description": "Follow up on bulk scanner requirement",
+      "scheduledAt": "2026-09-15T10:37:39.664Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-09-14T10:37:39.672Z",
+      "updatedAt": "2026-09-14T10:37:39.672Z",
+      "_id": "fol_1789382259672_eplld"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.677Z",
+    "createdAt": "2026-09-14T10:37:39.677Z",
+    "_id": "aud_1789382259677_4ot99"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "customers",
+    "description": "Customer",
+    "recordId": "cus_1789382259694_o8rsu",
+    "newData": {
+      "name": "Alpha Tech Systems 9040 Pvt Ltd",
+      "companyName": "Alpha Tech Systems 9040 Pvt Ltd"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.694Z",
+    "createdAt": "2026-09-14T10:37:39.694Z",
+    "_id": "aud_1789382259694_8alvd"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382259734_0q1cm",
+    "newData": {
+      "quotationNumber": "QT-2026-0006",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:39.734Z",
+    "createdAt": "2026-09-14T10:37:39.734Z",
+    "_id": "aud_1789382259734_3b649"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:51.256Z",
+    "createdAt": "2026-09-14T10:37:51.256Z",
+    "_id": "aud_1789382271256_cu5fk"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:51.408Z",
+    "createdAt": "2026-09-14T10:37:51.409Z",
+    "_id": "aud_1789382271409_8i57l"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382271427_9r388",
+    "newData": {
+      "quotationNumber": "QT-2026-0007",
+      "grandTotal": 1180
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:51.427Z",
+    "createdAt": "2026-09-14T10:37:51.427Z",
+    "_id": "aud_1789382271427_4p8d4"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "APPROVE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382271427_9r388",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:37:51.434Z",
+    "createdAt": "2026-09-14T10:37:51.434Z",
+    "_id": "aud_1789382271434_r8m4t"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.020Z",
+    "createdAt": "2026-09-14T10:38:20.020Z",
+    "_id": "aud_1789382300020_5o0i2"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.186Z",
+    "createdAt": "2026-09-14T10:38:20.186Z",
+    "_id": "aud_1789382300186_2yiao"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382300357_oeirh",
+    "newData": {
+      "name": "Verification Buyer 9704",
+      "leadCode": "LD-2026-0624",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.357Z",
+    "createdAt": "2026-09-14T10:38:20.357Z",
+    "_id": "aud_1789382300358_fq5hg"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382300357_oeirh",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Assigned for testing calling flow"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.365Z",
+    "createdAt": "2026-09-14T10:38:20.365Z",
+    "_id": "aud_1789382300365_pizn5"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382300357_oeirh",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadCode": "LD-2026-0624",
+      "name": "Verification Buyer 9704",
+      "companyName": "Alpha Tech Systems 9704",
+      "email": "alpha9704@techsystems.in",
+      "phone": "+91 98877970412",
+      "source": "TradeIndia",
+      "status": "NEW",
+      "priority": "MEDIUM",
+      "leadScore": 85,
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun",
+      "estimatedValue": 125000,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "notes": "Automated test suite verification lead",
+      "tags": [
+        "New Lead"
+      ],
+      "createdAt": "2026-09-14T10:38:20.357Z",
+      "updatedAt": "2026-09-14T10:38:20.365Z",
+      "_id": "lea_1789382300357_oeirh"
+    },
+    "newData": {
+      "status": "CONTACTED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.372Z",
+    "createdAt": "2026-09-14T10:38:20.372Z",
+    "_id": "aud_1789382300372_liy0c"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382300384_ue937",
+    "newData": {
+      "leadName": "Verification Buyer 9704",
+      "outcome": "INTERESTED",
+      "duration": 95
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.384Z",
+    "createdAt": "2026-09-14T10:38:20.384Z",
+    "_id": "aud_1789382300384_rz8d0"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382300404_1bh37",
+    "newData": {
+      "title": "Discuss pricing terms",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.404Z",
+    "createdAt": "2026-09-14T10:38:20.404Z",
+    "_id": "aud_1789382300404_t77mu"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382300404_1bh37",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadId": "lea_1789382300357_oeirh",
+      "leadName": "",
+      "customerName": "",
+      "type": "Call",
+      "priority": "MEDIUM",
+      "title": "Discuss pricing terms",
+      "description": "Follow up on bulk scanner requirement",
+      "scheduledAt": "2026-09-15T10:38:20.395Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-09-14T10:38:20.404Z",
+      "updatedAt": "2026-09-14T10:38:20.404Z",
+      "_id": "fol_1789382300404_1bh37"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.411Z",
+    "createdAt": "2026-09-14T10:38:20.411Z",
+    "_id": "aud_1789382300411_4gv1b"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "customers",
+    "description": "Customer",
+    "recordId": "cus_1789382300433_o6glo",
+    "newData": {
+      "name": "Alpha Tech Systems 9704 Pvt Ltd",
+      "companyName": "Alpha Tech Systems 9704 Pvt Ltd"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.433Z",
+    "createdAt": "2026-09-14T10:38:20.433Z",
+    "_id": "aud_1789382300433_knk3y"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382300474_tnyzb",
+    "newData": {
+      "quotationNumber": "QT-2026-0008",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:20.474Z",
+    "createdAt": "2026-09-14T10:38:20.474Z",
+    "_id": "aud_1789382300474_glxe4"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Rohan Sharma (Admin) (ADMIN) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.677Z",
+    "createdAt": "2026-09-14T10:38:57.677Z",
+    "_id": "aud_1789382337677_9mwuk"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "LOGIN",
+    "module": "Authentication",
+    "description": "User Arjun Singh (EMPLOYEE) logged in successfully",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.822Z",
+    "createdAt": "2026-09-14T10:38:57.822Z",
+    "_id": "aud_1789382337822_p3edg"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382337976_siihx",
+    "newData": {
+      "name": "Verification Buyer 7459",
+      "leadCode": "LD-2026-0625",
+      "status": "NEW"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.976Z",
+    "createdAt": "2026-09-14T10:38:57.976Z",
+    "_id": "aud_1789382337976_p5a2g"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "ASSIGN",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382337976_siihx",
+    "oldData": {
+      "assignedTo": "Rohan Sharma (Admin)"
+    },
+    "newData": {
+      "assignedTo": "Arjun Singh",
+      "employeeId": "emp_arjun",
+      "notes": "Assigned for testing calling flow"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.980Z",
+    "createdAt": "2026-09-14T10:38:57.980Z",
+    "_id": "aud_1789382337980_jbd8d"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "leads",
+    "description": "Lead",
+    "recordId": "lea_1789382337976_siihx",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadCode": "LD-2026-0625",
+      "name": "Verification Buyer 7459",
+      "companyName": "Alpha Tech Systems 7459",
+      "email": "alpha7459@techsystems.in",
+      "phone": "+91 98877745912",
+      "source": "TradeIndia",
+      "status": "NEW",
+      "priority": "MEDIUM",
+      "leadScore": 85,
+      "assignedTo": "Arjun Singh",
+      "assignedToId": "emp_arjun",
+      "estimatedValue": 125000,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "notes": "Automated test suite verification lead",
+      "tags": [
+        "New Lead"
+      ],
+      "createdAt": "2026-09-14T10:38:57.976Z",
+      "updatedAt": "2026-09-14T10:38:57.980Z",
+      "_id": "lea_1789382337976_siihx"
+    },
+    "newData": {
+      "status": "CONTACTED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.985Z",
+    "createdAt": "2026-09-14T10:38:57.985Z",
+    "_id": "aud_1789382337985_wl2sb"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "call_logs",
+    "description": "Lead Call",
+    "recordId": "cal_1789382337995_mfyhs",
+    "newData": {
+      "leadName": "Verification Buyer 7459",
+      "outcome": "INTERESTED",
+      "duration": 95
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:57.995Z",
+    "createdAt": "2026-09-14T10:38:57.995Z",
+    "_id": "aud_1789382337995_8gux2"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "CREATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382338008_e7h77",
+    "newData": {
+      "title": "Discuss pricing terms",
+      "type": "Call"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.008Z",
+    "createdAt": "2026-09-14T10:38:58.008Z",
+    "_id": "aud_1789382338008_2w2u5"
+  },
+  {
+    "userId": "usr_employee_arjun",
+    "userName": "Arjun Singh",
+    "userRole": "EMPLOYEE",
+    "action": "UPDATE",
+    "module": "follow_ups",
+    "description": "FollowUp",
+    "recordId": "fol_1789382338008_e7h77",
+    "oldData": {
+      "adminId": "usr_admin_main",
+      "leadId": "lea_1789382337976_siihx",
+      "leadName": "",
+      "customerName": "",
+      "type": "Call",
+      "priority": "MEDIUM",
+      "title": "Discuss pricing terms",
+      "description": "Follow up on bulk scanner requirement",
+      "scheduledAt": "2026-09-15T10:38:58.002Z",
+      "status": "PENDING",
+      "assignedTo": "Arjun Singh",
+      "createdAt": "2026-09-14T10:38:58.008Z",
+      "updatedAt": "2026-09-14T10:38:58.008Z",
+      "_id": "fol_1789382338008_e7h77"
+    },
+    "newData": {
+      "status": "COMPLETED"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.013Z",
+    "createdAt": "2026-09-14T10:38:58.013Z",
+    "_id": "aud_1789382338013_kihq8"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "customers",
+    "description": "Customer",
+    "recordId": "cus_1789382338031_fo9hy",
+    "newData": {
+      "name": "Alpha Tech Systems 7459 Pvt Ltd",
+      "companyName": "Alpha Tech Systems 7459 Pvt Ltd"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.031Z",
+    "createdAt": "2026-09-14T10:38:58.031Z",
+    "_id": "aud_1789382338031_82gws"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382338064_haic5",
+    "newData": {
+      "quotationNumber": "QT-2026-0009",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.065Z",
+    "createdAt": "2026-09-14T10:38:58.065Z",
+    "_id": "aud_1789382338065_vluzp"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "APPROVE",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382338064_haic5",
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.070Z",
+    "createdAt": "2026-09-14T10:38:58.070Z",
+    "_id": "aud_1789382338070_mazi3"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CONVERT",
+    "module": "quotations",
+    "description": "Quotation",
+    "recordId": "quo_1789382338064_haic5",
+    "oldData": {
+      "status": "APPROVED"
+    },
+    "newData": {
+      "convertedSalesOrderId": "sal_1789382338076_xgui3"
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.076Z",
+    "createdAt": "2026-09-14T10:38:58.076Z",
+    "_id": "aud_1789382338076_kisuk"
+  },
+  {
+    "userId": "usr_admin_main",
+    "userName": "Rohan Sharma (Admin)",
+    "userRole": "ADMIN",
+    "action": "CREATE",
+    "module": "invoices",
+    "description": "Invoice",
+    "recordId": "inv_1789382338083_zx6zq",
+    "newData": {
+      "invoiceNumber": "INV-2026-0004",
+      "grandTotal": 26550
+    },
+    "ipAddress": "127.0.0.1",
+    "userAgent": "node",
+    "timestamp": "2026-09-14T10:38:58.083Z",
+    "createdAt": "2026-09-14T10:38:58.083Z",
+    "_id": "aud_1789382338083_en9p9"
   }
 ]

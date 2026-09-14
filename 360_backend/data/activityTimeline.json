@@ -5637,5 +5637,428 @@
     "performedBy": "TradeIndia Lead Sync Connector Gateway",
     "timestamp": "2026-09-14T09:53:35.498Z",
     "_id": "act_1789379615498_xvhnx"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789379615496_gneaq",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Unassigned' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Urgent requirement for thermal ribbons. Please call buyer immediately.)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:17:37.504Z",
+    "_id": "act_1789381057505_bn4c5"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789379615496_gneaq",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'QUALIFIED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:17:38.007Z",
+    "_id": "act_1789381058007_j8yuc"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382078456_fbldj",
+    "action": "CREATE",
+    "description": "Lead 'Verification Buyer Alpha' (LD-2026-0621) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:34:38.456Z",
+    "_id": "act_1789382078456_ghjh8"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789382078456_fbldj",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Assigned for testing calling flow)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:34:38.503Z",
+    "_id": "act_1789382078509_a81h8"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382078456_fbldj",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'CONTACTED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:34:38.520Z",
+    "_id": "act_1789382078520_ymqss"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382078456_fbldj",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Discuss pricing terms' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:34:38.643Z",
+    "_id": "act_1789382078643_rh3yj"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382078456_fbldj",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Pricing agreed with client",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:34:38.692Z",
+    "_id": "act_1789382078692_6oukg"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "CUSTOMER",
+    "entityId": "cus_1789382078731_3gfb2",
+    "action": "CREATE",
+    "description": "Customer 'Alpha Tech Systems Pvt Ltd' (CUST-2026-0005) created by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:34:38.732Z",
+    "_id": "act_1789382078732_pu9lo"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382078760_p3q7l",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0004 generated for ₹26,550",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:34:38.865Z",
+    "_id": "act_1789382078865_0ax70"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382078760_p3q7l",
+    "action": "APPROVE",
+    "description": "Quotation QT-2026-0004 approved by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:35:13.563Z",
+    "_id": "act_1789382113563_g772t"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "SALES_ORDER",
+    "entityId": "sal_1789382113574_p6m5x",
+    "action": "CREATE",
+    "description": "Sales Order SO-2026-0002 generated from Quotation QT-2026-0004",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:35:13.575Z",
+    "_id": "act_1789382113575_xg489"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382206940_xcpt9",
+    "action": "CREATE",
+    "description": "Lead 'Verification Buyer Alpha' (LD-2026-0622) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:36:46.940Z",
+    "_id": "act_1789382206940_x31hl"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789382206940_xcpt9",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Assigned for testing calling flow)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:36:46.947Z",
+    "_id": "act_1789382206947_jhczd"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382206940_xcpt9",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'CONTACTED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:36:46.952Z",
+    "_id": "act_1789382206952_ldsxx"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382206940_xcpt9",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Discuss pricing terms' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:36:47.002Z",
+    "_id": "act_1789382207002_ikgdy"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382206940_xcpt9",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Pricing agreed with client",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:36:47.011Z",
+    "_id": "act_1789382207011_70jbc"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382231977_nwvqe",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0005 generated for ₹26,550",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:11.992Z",
+    "_id": "act_1789382231992_b2hzo"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382259641_4smto",
+    "action": "CREATE",
+    "description": "Lead 'Verification Buyer 9040' (LD-2026-0623) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:39.641Z",
+    "_id": "act_1789382259641_ve6be"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789382259641_4smto",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Assigned for testing calling flow)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:39.645Z",
+    "_id": "act_1789382259645_3npdm"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382259641_4smto",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'CONTACTED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:37:39.650Z",
+    "_id": "act_1789382259650_cm9y5"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382259641_4smto",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Discuss pricing terms' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:37:39.672Z",
+    "_id": "act_1789382259672_f7sr2"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382259641_4smto",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Pricing agreed with client",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:37:39.677Z",
+    "_id": "act_1789382259677_zrb9g"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "CUSTOMER",
+    "entityId": "cus_1789382259694_o8rsu",
+    "action": "CREATE",
+    "description": "Customer 'Alpha Tech Systems 9040 Pvt Ltd' (CUST-2026-0006) created by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:39.694Z",
+    "_id": "act_1789382259694_zpli2"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382259734_0q1cm",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0006 generated for ₹26,550",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:39.734Z",
+    "_id": "act_1789382259734_h9nz5"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382271427_9r388",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0007 generated for ₹1,180",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:51.427Z",
+    "_id": "act_1789382271427_n59p6"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382271427_9r388",
+    "action": "APPROVE",
+    "description": "Quotation QT-2026-0007 approved by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:37:51.434Z",
+    "_id": "act_1789382271434_ypag7"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382300357_oeirh",
+    "action": "CREATE",
+    "description": "Lead 'Verification Buyer 9704' (LD-2026-0624) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:20.357Z",
+    "_id": "act_1789382300357_ajaft"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789382300357_oeirh",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Assigned for testing calling flow)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:20.365Z",
+    "_id": "act_1789382300365_jdkfe"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382300357_oeirh",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'CONTACTED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:20.372Z",
+    "_id": "act_1789382300372_sshg5"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382300357_oeirh",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Discuss pricing terms' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:20.404Z",
+    "_id": "act_1789382300404_lcjl2"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382300357_oeirh",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Pricing agreed with client",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:20.411Z",
+    "_id": "act_1789382300411_8fkfe"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "CUSTOMER",
+    "entityId": "cus_1789382300433_o6glo",
+    "action": "CREATE",
+    "description": "Customer 'Alpha Tech Systems 9704 Pvt Ltd' (CUST-2026-0007) created by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:20.433Z",
+    "_id": "act_1789382300433_eadff"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382300474_tnyzb",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0008 generated for ₹26,550",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:20.474Z",
+    "_id": "act_1789382300474_7esrv"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "CREATE",
+    "description": "Lead 'Verification Buyer 7459' (LD-2026-0625) registered in system",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:57.976Z",
+    "_id": "act_1789382337976_ihice"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "UPDATE",
+    "description": "Lead reassigned from 'Rohan Sharma (Admin)' to 'Arjun Singh' by Rohan Sharma (Admin) (Note: Assigned for testing calling flow)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:57.980Z",
+    "_id": "act_1789382337980_xaaur"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "UPDATE",
+    "description": "Lead status updated to 'CONTACTED'",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:57.985Z",
+    "_id": "act_1789382337985_ksb1z"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "SCHEDULE_FOLLOWUP",
+    "description": "Follow-up 'Discuss pricing terms' scheduled for 15/9/2026",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:58.008Z",
+    "_id": "act_1789382338008_fh2y5"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "LEAD",
+    "entityId": "lea_1789382337976_siihx",
+    "action": "COMPLETE_FOLLOWUP",
+    "description": "Follow-up completed: Pricing agreed with client",
+    "performedBy": "Arjun Singh",
+    "timestamp": "2026-09-14T10:38:58.013Z",
+    "_id": "act_1789382338013_83ra4"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "CUSTOMER",
+    "entityId": "cus_1789382338031_fo9hy",
+    "action": "CREATE",
+    "description": "Customer 'Alpha Tech Systems 7459 Pvt Ltd' (CUST-2026-0008) created by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:58.031Z",
+    "_id": "act_1789382338031_cvtwb"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382338064_haic5",
+    "action": "CREATE",
+    "description": "Quotation QT-2026-0009 generated for ₹26,550",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:58.064Z",
+    "_id": "act_1789382338064_tuphn"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "QUOTATION",
+    "entityId": "quo_1789382338064_haic5",
+    "action": "APPROVE",
+    "description": "Quotation QT-2026-0009 approved by Rohan Sharma (Admin)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:58.070Z",
+    "_id": "act_1789382338070_r5n18"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "SALES_ORDER",
+    "entityId": "sal_1789382338076_xgui3",
+    "action": "CREATE",
+    "description": "Sales Order SO-2026-0003 generated from Quotation QT-2026-0009",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:58.076Z",
+    "_id": "act_1789382338076_bm9s0"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "entityType": "INVOICE",
+    "entityId": "inv_1789382338083_zx6zq",
+    "action": "CREATE",
+    "description": "Tax Invoice INV-2026-0004 issued for Sales Order SO-2026-0003 (Amount: ₹26,550)",
+    "performedBy": "Rohan Sharma (Admin)",
+    "timestamp": "2026-09-14T10:38:58.083Z",
+    "_id": "act_1789382338083_6xfnh"
   }
 ]

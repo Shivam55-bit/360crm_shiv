@@ -83,5 +83,40 @@
     "createdAt": "2026-02-16T10:00:00.000Z",
     "updatedAt": "2026-08-29T11:18:34.422Z",
     "_id": "inv_1788002314421_kd1yu"
+  },
+  {
+    "adminId": "usr_admin_main",
+    "invoiceNumber": "INV-2026-0004",
+    "salesOrderId": "sal_1789382338076_xgui3",
+    "customerId": "cus_1789382338031_fo9hy",
+    "customerName": "Alpha Tech Systems 7459 Pvt Ltd",
+    "invoiceDate": "2026-09-14",
+    "dueDate": "2026-10-14",
+    "items": [
+      {
+        "productId": "prod_1",
+        "productName": "SS-316 Flanged Ball Valve 2\"",
+        "sku": "SKU-GEN",
+        "quantity": 5,
+        "unitPrice": 4500,
+        "discountPercent": 0,
+        "taxPercent": 18,
+        "taxRate": 18,
+        "total": 26550
+      }
+    ],
+    "subTotal": 22500,
+    "taxAmount": 4050,
+    "discountAmount": 0,
+    "shipping": 0,
+    "grandTotal": 26550,
+    "paidAmount": 0,
+    "dueAmount": 26550,
+    "status": "SENT",
+    "paymentStatus": "UNPAID",
+    "notes": "Generated from Sales Order SO-2026-0003",
+    "createdAt": "2026-09-14T10:38:58.083Z",
+    "updatedAt": "2026-09-14T10:38:58.083Z",
+    "_id": "inv_1789382338083_zx6zq"
   }
 ]
