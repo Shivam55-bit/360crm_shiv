@@ -1317,12 +1317,30 @@ export const IntegrationsView: React.FC = () => {
                     <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
                       <span>Gateway Health:</span>
                       <span className={`text-[10px] font-bold flex items-center gap-1 ${
-                        (int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'text-emerald-600' : 'text-amber-600'
+                        int.lastSyncStatus === 'RATE_LIMITED'
+                          ? 'text-amber-600'
+                          : int.lastSyncStatus === 'FAILED'
+                          ? 'text-rose-600'
+                          : int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS'
+                          ? 'text-emerald-600'
+                          : 'text-amber-600'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          (int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'bg-emerald-500' : 'bg-amber-500'
+                          int.lastSyncStatus === 'RATE_LIMITED'
+                            ? 'bg-amber-500 animate-pulse'
+                            : int.lastSyncStatus === 'FAILED'
+                            ? 'bg-rose-500'
+                            : int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS'
+                            ? 'bg-emerald-500'
+                            : 'bg-amber-500'
                         }`} />
-                        {(int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS') ? 'Operational & Ready' : 'Warning / Error'}
+                        {int.lastSyncStatus === 'RATE_LIMITED'
+                          ? 'Rate Limit Cooldown'
+                          : int.lastSyncStatus === 'FAILED'
+                          ? 'Sync Failed'
+                          : (int.lastSyncStatus === 'SUCCESS' || int.lastTestStatus === 'SUCCESS')
+                          ? 'Operational & Ready'
+                          : 'Warning / Error'}
                       </span>
                     </div>
                   )}

@@ -24,27 +24,26 @@
       "syncRespondedLeads": true,
       "defaultPriority": "MEDIUM"
     },
-    "lastSyncedAt": "2026-09-11T08:53:58.080Z",
-    "lastSuccessfulSyncAt": "2026-09-11T08:48:38.079Z",
-    "lastSyncStatus": "FAILED",
-    "lastTestStatus": "FAILED",
-    "lastTestResponse": "Sync error: Rate limit exceed. Try After 15 minutes : A maximum of 5 requests is allowed every 5 minutes.",
-    "totalSyncedEvents": 1798,
-    "totalFetched": 1198,
-    "totalCreated": 165,
-    "totalUpdated": 1033,
+    "lastSyncedAt": "2026-09-14T09:59:25.771Z",
+    "lastSuccessfulSyncAt": "2026-09-14T09:59:25.771Z",
+    "lastSyncStatus": "SUCCESS",
+    "lastTestStatus": "SUCCESS",
+    "lastTestResponse": "HTTP 200 OK - TradeIndia connection active & verified.",
+    "totalSyncedEvents": 5202,
+    "totalFetched": 4602,
+    "totalCreated": 167,
+    "totalUpdated": 4435,
     "totalFailed": 0,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-09-11T08:53:58.082Z",
-    "nextSyncAt": "2026-09-11T08:58:58.080Z",
+    "updatedAt": "2026-09-14T09:59:25.772Z",
+    "nextSyncAt": "2026-09-14T10:04:25.771Z",
     "lastSyncResult": {
-      "fetched": 600,
-      "created": 571,
-      "updated": 29,
+      "fetched": 2,
+      "created": 0,
+      "updated": 2,
       "skipped": 0,
       "failed": 0
-    },
-    "lastSyncError": "Rate limit exceed. Try After 15 minutes : A maximum of 5 requests is allowed every 5 minutes."
+    }
   },
   {
     "_id": "int_2",
@@ -68,7 +67,7 @@
       "defaultPriority": "MEDIUM",
       "initialSyncDaysBack": 7
     },
-    "lastSyncedAt": "2026-09-11T08:49:08.110Z",
+    "lastSyncedAt": "2026-09-14T10:01:25.240Z",
     "lastSuccessfulSyncAt": "2026-02-16T17:45:00.000Z",
     "lastSyncStatus": "FAILED",
     "lastTestStatus": "FAILED",
@@ -79,7 +78,7 @@
     "totalUpdated": 6,
     "totalFailed": 0,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-09-11T08:49:08.110Z",
+    "updatedAt": "2026-09-14T10:01:25.241Z",
     "lastSyncError": "CRM key that you are using is incorrect. Kindly use the correct CRM key visible on the IM Leads API screen."
   },
   {

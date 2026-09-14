@@ -26,37 +26,8 @@
     "status": "ACTIVE",
     "avatar": "RS",
     "createdAt": "2026-01-05T00:00:00.000Z",
-    "updatedAt": "2026-09-11T08:37:01.757Z",
-    "lastLogin": "2026-09-11T08:37:01.757Z"
-  },
-  {
-    "_id": "usr_admin_hr",
-    "name": "Neha Kapoor (HR Lead)",
-    "email": "hr@360crm.com",
-    "passwordHash": "$2a$10$JpeCTnk95N67A.Fv1gOn2uxXjvyZk/RTJMljvhFBJfvo1hudVk3.y",
-    "phone": "+91 98567 89012",
-    "role": "HR_EMPLOYEE",
-    "roleId": "role_hr",
-    "customPermissions": [
-      "dashboard.view",
-      "employees.view",
-      "employees.create",
-      "employees.update",
-      "attendance.view",
-      "attendance.create",
-      "attendance.update",
-      "salary.view",
-      "salary.create",
-      "salary.update",
-      "performance.view",
-      "performance.create",
-      "reports.view"
-    ],
-    "organization": "SHIV SHAKTI ENTERPRISES",
-    "status": "ACTIVE",
-    "avatar": "NK",
-    "createdAt": "2026-01-18T00:00:00.000Z",
-    "updatedAt": "2026-01-18T00:00:00.000Z"
+    "updatedAt": "2026-09-14T09:57:56.654Z",
+    "lastLogin": "2026-09-14T09:57:56.654Z"
   },
   {
     "_id": "usr_employee_arjun",

@@ -5617,5 +5617,25 @@
     "performedBy": "TradeIndia Sync Engine",
     "timestamp": "2026-09-11T08:48:37.999Z",
     "_id": "act_1789116517999_vsxd4"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789379615496_gneaq",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Rameshwar Patel - Thermal Transfer Ribbon Resin Grade 110mm x 300m)",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-14T09:53:35.495Z",
+    "_id": "act_1789379615497_s88vx"
+  },
+  {
+    "entityType": "LEAD",
+    "entityId": "lea_1789379615498_wrl5i",
+    "action": "SYNC",
+    "activityType": "LEAD_CREATED",
+    "description": "New lead auto-ingested from TradeIndia Lead Sync Connector (Siddharth Roy - Direct Thermal Barcode Shipping Labels 4x6 Inch (100x150mm))",
+    "performedBy": "TradeIndia Lead Sync Connector Gateway",
+    "timestamp": "2026-09-14T09:53:35.498Z",
+    "_id": "act_1789379615498_xvhnx"
   }
 ]
